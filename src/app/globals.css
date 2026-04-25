@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+:root {
+  --background: #07131e;
+  --foreground: #edf4f7;
+  --font-body: "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
+  --font-display: "Avenir Next Condensed", "Franklin Gothic Medium", "Arial Narrow", sans-serif;
+  --panel: rgba(7, 19, 30, 0.72);
+  --panel-strong: rgba(10, 23, 36, 0.9);
+  --muted: #89a1ae;
+  --accent: #ef7c34;
+  --accent-strong: #ffb347;
+  --line: rgba(173, 197, 210, 0.18);
+  --success: #72d1b2;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-panel: var(--panel);
+  --color-panel-strong: var(--panel-strong);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-line: var(--line);
+  --color-success: var(--success);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(239, 124, 52, 0.18), transparent 28%),
+    radial-gradient(circle at 80% 18%, rgba(114, 209, 178, 0.12), transparent 24%),
+    linear-gradient(180deg, #0d1a28 0%, #07131e 52%, #050d15 100%);
+  color: var(--foreground);
+  font-family: var(--font-body), sans-serif;
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: rgba(255, 179, 71, 0.32);
+  color: white;
+}
+
+.surface {
+  background: var(--panel);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28);
+}
+
+.surface-strong {
+  background: var(--panel-strong);
+  backdrop-filter: blur(18px);
+  border: 1px solid var(--line);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+}
+
+.eyebrow {
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  color: var(--accent-strong);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(173, 197, 210, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(173, 197, 210, 0.06) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.text-balance {
+  text-wrap: balance;
+}

@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  CAPTAIN
+  PLAYER
+  SUB
+  ANALYST
+  COACH
+}
+
+enum TeamApplicationStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum ScrimStatus {
+  OPEN
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ScheduleEventType {
+  PRACTICE
+  SCRIM
+  TOURNAMENT
+  REVIEW
+  STREAM
+}
+
+enum BroadcastStatus {
+  LIVE
+  UPCOMING
+  ENDED
+}
+
+model User {
+  id               String           @id @default(cuid())
+  steamId          String           @unique
+  profileName      String
+  avatarUrl        String?
+  headline         String?
+  region           String?
+  deadlockRank     String?
+  deadlockRankTier Int?
+  isLFT            Boolean          @default(false)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  memberships      TeamMembership[]
+  ownedTeams       Team[]           @relation("TeamOwner")
+  applications     TeamApplication[]
+  createdScrims    ScrimRequest[]   @relation("ScrimCreator")
+}
+
+model Team {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  name              String
+  tag               String            @unique
+  region            String
+  focus             String
+  primaryRank       String
+  description       String
+  recruiting        Boolean           @default(true)
+  openRoles         String[]
+  ownerId           String
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  owner             User              @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  memberships       TeamMembership[]
+  applications      TeamApplication[]
+  requestedScrims   ScrimRequest[]    @relation("RequesterTeam")
+  opponentScrims    ScrimRequest[]    @relation("OpponentTeam")
+  scheduleEvents    ScheduleEvent[]
+  tournamentEntries TournamentEntry[]
+}
+
+model TeamMembership {
+  id        String         @id @default(cuid())
+  teamId    String
+  userId    String
+  role      MembershipRole
+  joinedAt  DateTime       @default(now())
+  team      Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model TeamApplication {
+  id         String                 @id @default(cuid())
+  teamId     String
+  userId     String
+  message    String?
+  status     TeamApplicationStatus  @default(PENDING)
+  createdAt  DateTime               @default(now())
+  team       Team                   @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+}
+
+model ScrimRequest {
+  id              String       @id @default(cuid())
+  requesterTeamId String
+  opponentTeamId  String?
+  createdById     String
+  status          ScrimStatus  @default(OPEN)
+  format          String
+  region          String
+  wantedRank      String
+  notes           String?
+  startsAt        DateTime
+  createdAt       DateTime     @default(now())
+  requesterTeam   Team         @relation("RequesterTeam", fields: [requesterTeamId], references: [id], onDelete: Cascade)
+  opponentTeam    Team?        @relation("OpponentTeam", fields: [opponentTeamId], references: [id], onDelete: SetNull)
+  createdBy       User         @relation("ScrimCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  scheduleEvents  ScheduleEvent[]
+
+  @@index([requesterTeamId, startsAt])
+}
+
+model ScheduleEvent {
+  id         String            @id @default(cuid())
+  teamId     String
+  scrimId    String?
+  title      String
+  type       ScheduleEventType
+  startsAt   DateTime
+  endsAt     DateTime
+  location   String?
+  notes      String?
+  createdAt  DateTime          @default(now())
+  team       Team              @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  scrim      ScrimRequest?     @relation(fields: [scrimId], references: [id], onDelete: SetNull)
+
+  @@index([teamId, startsAt])
+}
+
+model Tournament {
+  id                String            @id @default(cuid())
+  slug              String            @unique
+  name              String
+  organizer         String
+  region            String
+  platform          String
+  format            String
+  prizePool         String?
+  entryRequirements String?
+  registrationUrl   String
+  startsAt          DateTime
+  featured          Boolean           @default(false)
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  entries           TournamentEntry[]
+  broadcasts        Broadcast[]
+}
+
+model TournamentEntry {
+  id           String     @id @default(cuid())
+  tournamentId String
+  teamId       String
+  createdAt    DateTime   @default(now())
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  team         Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([tournamentId, teamId])
+}
+
+model Broadcast {
+  id           String          @id @default(cuid())
+  tournamentId String?
+  title        String
+  channel      String
+  status       BroadcastStatus
+  startsAt     DateTime
+  createdAt    DateTime        @default(now())
+  tournament   Tournament?     @relation(fields: [tournamentId], references: [id], onDelete: SetNull)
+}
