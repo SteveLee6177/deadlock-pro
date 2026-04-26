@@ -1,4 +1,4 @@
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import type { SessionUser } from "@/lib/types";
@@ -10,7 +10,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     return null;
   }
 
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return session.user;
   }
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
+import { canUseDatabase } from "@/lib/database";
 import { fetchDeadlockRank } from "@/lib/deadlock";
-import { hasDatabase } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { getSteamProfileSummary, verifySteamResponse } from "@/lib/steam";
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 
   const session = await getSession();
 
-  if (hasDatabase()) {
+  if (await canUseDatabase()) {
     const user = await prisma.user.upsert({
       where: { steamId },
       update: {

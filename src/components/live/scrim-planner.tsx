@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { TeamSummary } from "@/lib/types";
+import type { UserTeamOption } from "@/lib/types";
 
 type FormState = {
   teamId: string;
@@ -17,7 +17,7 @@ export function ScrimPlanner({
   teams,
   disabled,
 }: {
-  teams: TeamSummary[];
+  teams: UserTeamOption[];
   disabled: boolean;
 }) {
   const router = useRouter();
@@ -72,17 +72,22 @@ export function ScrimPlanner({
         </div>
 
         <div className="grid gap-4">
+          {teams.length === 0 ? (
+            <p className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-muted">
+              Create or join a team first to post a scrim request.
+            </p>
+          ) : null}
           <select
             value={scrimForm.requesterTeamId}
             onChange={(event) =>
               setScrimForm((current) => ({ ...current, requesterTeamId: event.target.value }))
             }
             className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           >
             {teams.map((team) => (
               <option key={team.id} value={team.id} className="bg-slate-900">
-                {team.name}
+                {team.name} ({team.tag})
               </option>
             ))}
           </select>
@@ -93,7 +98,7 @@ export function ScrimPlanner({
               setScrimForm((current) => ({ ...current, startsAt: event.target.value }))
             }
             className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           />
           <div className="grid gap-4 md:grid-cols-3">
             <input
@@ -103,7 +108,7 @@ export function ScrimPlanner({
               }
               placeholder="Region"
               className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-              disabled={disabled || isPending}
+              disabled={disabled || isPending || teams.length === 0}
             />
             <input
               value={scrimForm.format}
@@ -112,7 +117,7 @@ export function ScrimPlanner({
               }
               placeholder="Format"
               className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-              disabled={disabled || isPending}
+              disabled={disabled || isPending || teams.length === 0}
             />
             <input
               value={scrimForm.wantedRank}
@@ -121,7 +126,7 @@ export function ScrimPlanner({
               }
               placeholder="Target rank"
               className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-              disabled={disabled || isPending}
+              disabled={disabled || isPending || teams.length === 0}
             />
           </div>
           <textarea
@@ -131,13 +136,13 @@ export function ScrimPlanner({
             }
             placeholder="Preferred goals, feedback structure, or lobby notes."
             className="min-h-28 rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           />
         </div>
 
         <button
           type="submit"
-          disabled={disabled || isPending}
+          disabled={disabled || isPending || teams.length === 0}
           className="mt-4 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isPending ? "Posting..." : "Post scrim"}
@@ -184,17 +189,22 @@ export function ScrimPlanner({
         </div>
 
         <div className="grid gap-4">
+          {teams.length === 0 ? (
+            <p className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-muted">
+              Scheduling is limited to teams you are a member of.
+            </p>
+          ) : null}
           <select
             value={scheduleForm.teamId}
             onChange={(event) =>
               setScheduleForm((current) => ({ ...current, teamId: event.target.value }))
             }
             className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           >
             {teams.map((team) => (
               <option key={team.id} value={team.id} className="bg-slate-900">
-                {team.name}
+                {team.name} ({team.tag})
               </option>
             ))}
           </select>
@@ -205,7 +215,7 @@ export function ScrimPlanner({
             }
             placeholder="Event title"
             className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           />
           <div className="grid gap-4 md:grid-cols-2">
             <input
@@ -215,7 +225,7 @@ export function ScrimPlanner({
                 setScheduleForm((current) => ({ ...current, startsAt: event.target.value }))
               }
               className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-              disabled={disabled || isPending}
+              disabled={disabled || isPending || teams.length === 0}
             />
             <input
               type="datetime-local"
@@ -224,7 +234,7 @@ export function ScrimPlanner({
                 setScheduleForm((current) => ({ ...current, endsAt: event.target.value }))
               }
               className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-              disabled={disabled || isPending}
+              disabled={disabled || isPending || teams.length === 0}
             />
           </div>
           <input
@@ -234,7 +244,7 @@ export function ScrimPlanner({
             }
             placeholder="Location"
             className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           />
           <textarea
             value={scheduleForm.notes}
@@ -243,16 +253,16 @@ export function ScrimPlanner({
             }
             placeholder="Anything teammates need before the block starts?"
             className="min-h-28 rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-            disabled={disabled || isPending}
+            disabled={disabled || isPending || teams.length === 0}
           />
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-4">
           <button
             type="submit"
-            disabled={disabled || isPending}
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          disabled={disabled || isPending || teams.length === 0}
+          className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
+        >
             {isPending ? "Saving..." : "Add to schedule"}
           </button>
           {feedback ? <p className="text-sm text-muted">{feedback}</p> : null}

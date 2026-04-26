@@ -37,10 +37,10 @@ export default async function HomePage() {
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
-                  href="/dashboard"
+                  href={data.user ? "/dashboard" : "/tournaments"}
                   className="rounded-full border border-line px-6 py-3 text-sm font-medium text-white transition hover:bg-white/6"
                 >
-                  Explore the dashboard
+                  {data.user ? "Explore the dashboard" : "Browse tournaments"}
                 </Link>
               </div>
 

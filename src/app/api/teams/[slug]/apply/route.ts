@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 
 const applySchema = z.object({
@@ -12,9 +12,9 @@ export async function POST(
   request: Request,
   context: { params: Promise<{ slug: string }> },
 ) {
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return NextResponse.json(
-      { message: "Configure Postgres before submitting applications." },
+      { message: "Postgres is unavailable right now, so applications cannot be submitted yet." },
       { status: 503 },
     );
   }

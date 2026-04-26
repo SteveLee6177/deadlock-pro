@@ -2,9 +2,22 @@ import { createRedisSubscriber } from "@/lib/redis";
 
 export const runtime = "nodejs";
 
-function send(controller: ReadableStreamDefaultController<Uint8Array>, payload: unknown) {
+function send(
+  controller: ReadableStreamDefaultController<Uint8Array>,
+  payload: unknown,
+  isClosed: () => boolean,
+) {
+  if (isClosed()) {
+    return;
+  }
+
   const encoder = new TextEncoder();
-  controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+
+  try {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
+  } catch {
+    // The browser can disconnect between the closed check and enqueue.
+  }
 }
 
 export async function GET(request: Request) {
@@ -26,24 +39,76 @@ export async function GET(request: Request) {
   const channels =
     teamId === "all" ? ["schedule:all"] : ["schedule:all", `schedule:team:${teamId}`];
 
+  let isClosed = false;
+  let heartbeat: ReturnType<typeof setInterval> | undefined;
+  let streamController: ReadableStreamDefaultController<Uint8Array> | undefined;
+  let handleMessage: ((channel: string, message: string) => void) | undefined;
+
+  const closeStream = async (closeController: boolean) => {
+    if (isClosed) {
+      return;
+    }
+
+    isClosed = true;
+    clearInterval(heartbeat);
+
+    if (handleMessage) {
+      subscriber.off("message", handleMessage);
+    }
+
+    await subscriber.unsubscribe(...channels).catch(() => undefined);
+    subscriber.disconnect();
+
+    if (!closeController || !streamController) {
+      return;
+    }
+
+    try {
+      streamController.close();
+    } catch {
+      // The stream may already be closed by Next.js/request abort handling.
+    }
+  };
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      await subscriber.subscribe(...channels);
+      streamController = controller;
 
-      const heartbeat = setInterval(() => {
-        send(controller, { kind: "status", title: "heartbeat" });
+      try {
+        if (subscriber.status === "wait") {
+          await subscriber.connect();
+        }
+
+        await subscriber.subscribe(...channels);
+      } catch {
+        send(controller, { kind: "status", title: "disabled" }, () => isClosed);
+        subscriber.disconnect();
+        try {
+          controller.close();
+        } catch {
+          // The stream may already be closed by Next.js/request abort handling.
+        }
+        return;
+      }
+
+      heartbeat = setInterval(() => {
+        send(controller, { kind: "status", title: "heartbeat" }, () => isClosed);
       }, 15000);
 
-      subscriber.on("message", (_channel, message) => {
-        send(controller, JSON.parse(message));
-      });
+      handleMessage = (_channel, message) => {
+        try {
+          send(controller, JSON.parse(message), () => isClosed);
+        } catch {
+          send(controller, { kind: "status", title: "invalid-message" }, () => isClosed);
+        }
+      };
 
-      request.signal.addEventListener("abort", async () => {
-        clearInterval(heartbeat);
-        await subscriber.unsubscribe(...channels);
-        subscriber.disconnect();
-        controller.close();
-      });
+      subscriber.on("message", handleMessage);
+
+      request.signal.addEventListener("abort", () => closeStream(true), { once: true });
+    },
+    async cancel() {
+      await closeStream(false);
     },
   });
 

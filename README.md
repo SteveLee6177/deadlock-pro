@@ -34,22 +34,28 @@ npm install
 cp .env.example .env
 ```
 
-3. Fill in your Postgres, Redis, Steam, and Deadlock API settings.
+3. Start the local infrastructure:
 
-4. Generate the Prisma client and push the schema:
+```bash
+npm run infra:up
+```
+
+4. Fill in your Steam and Deadlock API settings if you want those integrations active immediately.
+
+5. Generate the Prisma client and push the schema:
 
 ```bash
 npm run db:generate
 npm run db:push
 ```
 
-5. Seed demo data if you want a populated dev environment:
+6. Seed demo data if you want a populated dev environment:
 
 ```bash
 npm run db:seed
 ```
 
-6. Start the app:
+7. Start the app:
 
 ```bash
 npm run dev
@@ -86,3 +92,5 @@ See [.env.example](/Users/splee/Documents/New project/.env.example) for the full
 - The Deadlock rank sync is intentionally adapter-based because different community APIs expose slightly different response shapes.
 - Read paths fall back to demo content when `DATABASE_URL` is missing so the UI still renders during setup.
 - Mutations require Postgres so forms return a helpful message until the database is configured.
+- Local Postgres and Redis are defined in [docker-compose.yml](/Users/splee/Documents/New project/docker-compose.yml) and can be stopped with `npm run infra:down`.
+- Scrim posting and schedule writes are limited to teams the signed-in user actually belongs to.

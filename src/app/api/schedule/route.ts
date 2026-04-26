@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
+import { getCurrentUserMemberships } from "@/lib/db-user";
 import { publishScheduleEvent } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
 
@@ -15,20 +15,28 @@ const scheduleSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return NextResponse.json(
-      { message: "Configure Postgres before updating schedules." },
+      { message: "Postgres is unavailable right now, so schedules cannot be updated yet." },
       { status: 503 },
     );
   }
 
-  const user = await getCurrentUser();
+  const membershipData = await getCurrentUserMemberships();
 
-  if (!user) {
+  if (!membershipData) {
     return NextResponse.json({ message: "Sign in with Steam first." }, { status: 401 });
   }
 
   const payload = scheduleSchema.parse(await request.json());
+  const membership = membershipData.memberships.find((item) => item.team.id === payload.teamId);
+
+  if (!membership) {
+    return NextResponse.json(
+      { message: "You can only manage schedules for teams you belong to." },
+      { status: 403 },
+    );
+  }
 
   const team = await prisma.team.findUnique({
     where: { id: payload.teamId },

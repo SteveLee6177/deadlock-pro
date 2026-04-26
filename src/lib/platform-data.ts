@@ -2,12 +2,24 @@ import { formatDistanceToNow } from "date-fns";
 import { unstable_noStore as noStore } from "next/cache";
 import { demoBroadcasts, demoDashboardData, demoSchedule, demoScrims, demoTeamProfiles, demoTeams, demoTournaments } from "@/lib/demo-data";
 import { getCurrentUser } from "@/lib/auth";
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
+import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
-import type { BroadcastCard, DashboardData, OpenScrim, ScheduleFeedEvent, TeamProfile, TeamSummary, TournamentCard } from "@/lib/types";
+import type {
+  BroadcastCard,
+  DashboardData,
+  OpenScrim,
+  ScheduleFeedEvent,
+  TeamApplicationSummary,
+  TeamProfile,
+  TeamSummary,
+  TournamentCard,
+  UserTeamWorkspace,
+  UserTeamOption,
+} from "@/lib/types";
 
 async function withFallback<T>(query: () => Promise<T>, fallback: T) {
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return fallback;
   }
 
@@ -70,6 +82,31 @@ function mapScheduleEvent(event: {
     endsAt: event.endsAt.toISOString(),
     location: event.location,
     notes: event.notes,
+  };
+}
+
+function mapScrimRequest(scrim: {
+  id: string;
+  requesterTeamId: string;
+  region: string;
+  format: string;
+  wantedRank: string;
+  notes: string | null;
+  startsAt: Date;
+  status: string;
+  requesterTeam: { name: string; tag: string };
+}): OpenScrim {
+  return {
+    id: scrim.id,
+    requesterTeamId: scrim.requesterTeamId,
+    requesterTeamName: scrim.requesterTeam.name,
+    requesterTag: scrim.requesterTeam.tag,
+    region: scrim.region,
+    format: scrim.format,
+    wantedRank: scrim.wantedRank,
+    notes: scrim.notes,
+    startsAt: scrim.startsAt.toISOString(),
+    status: scrim.status,
   };
 }
 
@@ -143,6 +180,121 @@ export async function getTeamsDirectory(): Promise<TeamSummary[]> {
   );
 }
 
+export async function getCurrentUserTeams(): Promise<UserTeamOption[]> {
+  noStore();
+
+  if (!(await canUseDatabase())) {
+    return [];
+  }
+
+  try {
+    const membershipData = await getCurrentUserMemberships();
+
+    if (!membershipData) {
+      return [];
+    }
+
+    return membershipData.memberships.map((membership) => ({
+      id: membership.team.id,
+      slug: membership.team.slug,
+      name: membership.team.name,
+      tag: membership.team.tag,
+      role: membership.role,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+export async function getCurrentUserTeamWorkspace(
+  preferredSlug?: string,
+): Promise<UserTeamWorkspace | null> {
+  noStore();
+
+  if (!(await canUseDatabase())) {
+    return null;
+  }
+
+  try {
+    const membershipData = await getCurrentUserMemberships();
+
+    if (!membershipData || membershipData.memberships.length === 0) {
+      return null;
+    }
+
+    const selectedMembership =
+      membershipData.memberships.find((membership) => membership.team.slug === preferredSlug) ??
+      membershipData.memberships.find((membership) => membership.role === "OWNER") ??
+      membershipData.memberships[0];
+
+    const team = await prisma.team.findUnique({
+      where: { id: selectedMembership.teamId },
+      include: {
+        applications: {
+          include: {
+            user: true,
+          },
+          orderBy: { createdAt: "desc" },
+          take: 6,
+        },
+        memberships: {
+          include: {
+            user: true,
+          },
+          orderBy: { joinedAt: "asc" },
+        },
+        requestedScrims: {
+          include: {
+            requesterTeam: true,
+          },
+          orderBy: { startsAt: "asc" },
+          take: 6,
+        },
+        scheduleEvents: {
+          include: {
+            team: true,
+          },
+          orderBy: { startsAt: "asc" },
+          where: { startsAt: { gte: new Date() } },
+          take: 6,
+        },
+      },
+    });
+
+    if (!team) {
+      return null;
+    }
+
+    const applications: TeamApplicationSummary[] = team.applications.map((application) => ({
+      id: application.id,
+      profileName: application.user.profileName,
+      deadlockRank: application.user.deadlockRank,
+      message: application.message,
+      status: application.status,
+      createdAt: application.createdAt.toISOString(),
+    }));
+
+    return {
+      userRole: selectedMembership.role,
+      team: {
+        ...mapTeam(team),
+        members: team.memberships.map((membership) => ({
+          id: membership.user.id,
+          profileName: membership.user.profileName,
+          role: membership.role,
+          avatarUrl: membership.user.avatarUrl,
+          deadlockRank: membership.user.deadlockRank,
+        })),
+        upcomingSchedule: team.scheduleEvents.map(mapScheduleEvent),
+      },
+      applications,
+      scrimRequests: team.requestedScrims.map(mapScrimRequest),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function getTeamProfile(slug: string): Promise<TeamProfile | null> {
   noStore();
 
@@ -200,18 +352,7 @@ export async function getOpenScrims(): Promise<OpenScrim[]> {
         orderBy: { startsAt: "asc" },
       });
 
-      return scrims.map((scrim) => ({
-        id: scrim.id,
-        requesterTeamId: scrim.requesterTeamId,
-        requesterTeamName: scrim.requesterTeam.name,
-        requesterTag: scrim.requesterTeam.tag,
-        region: scrim.region,
-        format: scrim.format,
-        wantedRank: scrim.wantedRank,
-        notes: scrim.notes,
-        startsAt: scrim.startsAt.toISOString(),
-        status: scrim.status,
-      }));
+      return scrims.map(mapScrimRequest);
     },
     demoScrims,
   );

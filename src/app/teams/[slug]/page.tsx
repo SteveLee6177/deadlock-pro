@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import { GuestAccessCard } from "@/components/access/guest-access-card";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { ScheduleList } from "@/components/schedule-list";
 import { TeamJoinForm } from "@/components/team-join-form";
@@ -67,7 +68,15 @@ export default async function TeamPage({
             </div>
           </div>
 
-          <TeamJoinForm slug={team.slug} disabled={!user} />
+          {user ? (
+            <TeamJoinForm slug={team.slug} disabled={false} />
+          ) : (
+            <GuestAccessCard
+              eyebrow="View Only"
+              title="Applications unlock after Steam sign-in"
+              description="Roster details stay visible for guests, but contacting this team and sending an intro requires a signed-in Steam identity."
+            />
+          )}
         </section>
 
         <section className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">

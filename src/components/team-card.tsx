@@ -1,8 +1,14 @@
 import Link from "next/link";
-import { ArrowUpRight, Flag, Radar, Users } from "lucide-react";
+import { ArrowUpRight, Flag, Radar, UserPlus, Users } from "lucide-react";
 import type { TeamSummary } from "@/lib/types";
 
-export function TeamCard({ team }: { team: TeamSummary }) {
+export function TeamCard({
+  team,
+  showQuickApply = false,
+}: {
+  team: TeamSummary;
+  showQuickApply?: boolean;
+}) {
   return (
     <article className="surface rounded-[28px] p-6 transition hover:-translate-y-1 hover:border-accent/40">
       <div className="flex items-start justify-between gap-4">
@@ -50,13 +56,24 @@ export function TeamCard({ team }: { team: TeamSummary }) {
         )}
       </div>
 
-      <Link
-        href={`/teams/${team.slug}`}
-        className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-accent-strong transition hover:text-white"
-      >
-        View roster
-        <ArrowUpRight className="h-4 w-4" />
-      </Link>
+      <div className="mt-6 flex flex-wrap items-center gap-4">
+        {showQuickApply && team.recruiting ? (
+          <Link
+            href={`/teams/${team.slug}#apply`}
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
+          >
+            <UserPlus className="h-4 w-4" />
+            Quick apply
+          </Link>
+        ) : null}
+        <Link
+          href={`/teams/${team.slug}`}
+          className="inline-flex items-center gap-2 text-sm font-medium text-accent-strong transition hover:text-white"
+        >
+          View roster
+          <ArrowUpRight className="h-4 w-4" />
+        </Link>
+      </div>
     </article>
   );
 }

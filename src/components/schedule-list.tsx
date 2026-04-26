@@ -1,7 +1,7 @@
 import { formatDistanceToNow } from "date-fns";
 import { CalendarClock, Video } from "lucide-react";
+import { LocalScheduleRange } from "@/components/local-schedule-range";
 import type { ScheduleFeedEvent } from "@/lib/types";
-import { formatScheduleRange } from "@/lib/utils";
 
 export function ScheduleList({
   events,
@@ -31,7 +31,7 @@ export function ScheduleList({
           <div className="mt-4 space-y-2 text-sm text-muted">
             <div className="flex items-center gap-2">
               <CalendarClock className="h-4 w-4 text-accent-strong" />
-              {formatScheduleRange(event.startsAt, event.endsAt)}
+              <LocalScheduleRange start={event.startsAt} end={event.endsAt} />
             </div>
             {event.location ? (
               <div className="flex items-center gap-2">

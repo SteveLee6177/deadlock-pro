@@ -1,17 +1,21 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
+import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 
 const createTeamSchema = z.object({
-  name: z.string().min(2),
-  tag: z.string().min(2).max(5),
-  region: z.string().min(2),
-  rank: z.string().min(2),
-  focus: z.string().min(2),
-  openRoles: z.string().optional(),
-  description: z.string().min(10),
+  name: z.string().trim().min(2, "Team name must be at least 2 characters."),
+  tag: z
+    .string()
+    .trim()
+    .min(2, "Team tag must be at least 2 characters.")
+    .max(5, "Team tag must be 5 characters or fewer."),
+  region: z.string().trim().min(2, "Region must be at least 2 characters."),
+  rank: z.string().trim().min(2, "Primary rank must be at least 2 characters."),
+  focus: z.string().trim().min(2, "Team focus must be at least 2 characters."),
+  openRoles: z.string().trim().optional(),
+  description: z.string().trim().min(10, "Description must be at least 10 characters."),
 });
 
 function slugify(input: string) {
@@ -22,39 +26,39 @@ function slugify(input: string) {
     .replace(/^-+|-+$/g, "");
 }
 
+function validationMessage(error: z.ZodError) {
+  return error.issues[0]?.message ?? "Check the team details and try again.";
+}
+
 export async function POST(request: Request) {
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return NextResponse.json(
-      { message: "Configure Postgres before creating teams." },
+      { message: "Postgres is unavailable right now, so teams cannot be created yet." },
       { status: 503 },
     );
   }
 
-  const user = await getCurrentUser();
+  const owner = await getOrCreateCurrentDbUser();
 
-  if (!user) {
+  if (!owner) {
     return NextResponse.json({ message: "Sign in with Steam first." }, { status: 401 });
   }
 
-  const payload = createTeamSchema.parse(await request.json());
-  const owner = await prisma.user.upsert({
-    where: { steamId: user.steamId },
-    update: {
-      profileName: user.profileName,
-      avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
-    },
-    create: {
-      steamId: user.steamId,
-      profileName: user.profileName,
-      avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
-    },
-  });
+  const body = await request.json().catch(() => null);
+  const parsedPayload = createTeamSchema.safeParse(body);
+
+  if (!parsedPayload.success) {
+    return NextResponse.json(
+      { message: validationMessage(parsedPayload.error) },
+      { status: 400 },
+    );
+  }
+
+  const payload = parsedPayload.data;
 
   const slugBase = slugify(payload.name);
 
-  await prisma.team.create({
+  const team = await prisma.team.create({
     data: {
       slug: `${slugBase}-${Date.now().toString().slice(-4)}`,
       name: payload.name,
@@ -79,5 +83,10 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ message: "Team created successfully." });
+  return NextResponse.json({
+    message: "Team created successfully.",
+    team: {
+      slug: team.slug,
+    },
+  });
 }

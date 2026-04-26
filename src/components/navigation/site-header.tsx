@@ -1,15 +1,17 @@
 import Link from "next/link";
-import { Shield, Swords, Trophy, Tv, Users } from "lucide-react";
+import { Swords, Trophy, Tv, UserCircle, Users } from "lucide-react";
 import type { SessionUser } from "@/lib/types";
 
 const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Shield },
   { href: "/teams", label: "Teams", icon: Users },
   { href: "/scrims", label: "Scrims", icon: Swords },
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
+  { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
 export function SiteHeader({ user }: { user: SessionUser | null }) {
+  const visibleNavItems = user ? navItems : navItems.filter((item) => item.href !== "/profile");
+
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-[#07131e]/85 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
@@ -26,7 +28,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         </Link>
 
         <nav className="hidden items-center gap-2 lg:flex">
-          {navItems.map(({ href, label, icon: Icon }) => (
+          {visibleNavItems.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}

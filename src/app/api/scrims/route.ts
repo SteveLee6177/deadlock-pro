@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getCurrentUser } from "@/lib/auth";
-import { hasDatabase } from "@/lib/env";
+import { canUseDatabase } from "@/lib/database";
+import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const scrimSchema = z.object({
   requesterTeamId: z.string().min(1),
@@ -14,39 +15,31 @@ const scrimSchema = z.object({
 });
 
 export async function POST(request: Request) {
-  if (!hasDatabase()) {
+  if (!(await canUseDatabase())) {
     return NextResponse.json(
-      { message: "Configure Postgres before posting scrims." },
+      { message: "Postgres is unavailable right now, so scrims cannot be posted yet." },
       { status: 503 },
     );
   }
 
-  const user = await getCurrentUser();
+  const membershipData = await getCurrentUserMemberships();
 
-  if (!user) {
+  if (!membershipData) {
     return NextResponse.json({ message: "Sign in with Steam first." }, { status: 401 });
   }
 
   const payload = scrimSchema.parse(await request.json());
-  const author = await prisma.user.upsert({
-    where: { steamId: user.steamId },
-    update: {
-      profileName: user.profileName,
-      avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
-    },
-    create: {
-      steamId: user.steamId,
-      profileName: user.profileName,
-      avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
-    },
-  });
+  if (!(await canManageTeamScrims(membershipData.user.id, payload.requesterTeamId))) {
+    return NextResponse.json(
+      { message: "Only team owners/managers can post official scrims." },
+      { status: 403 },
+    );
+  }
 
   await prisma.scrimRequest.create({
     data: {
       requesterTeamId: payload.requesterTeamId,
-      createdById: author.id,
+      createdById: membershipData.user.id,
       startsAt: new Date(payload.startsAt),
       region: payload.region,
       format: payload.format,

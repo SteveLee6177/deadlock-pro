@@ -1,5 +1,5 @@
 import { CalendarRange, MapPinned, Shield } from "lucide-react";
-import { formatScheduleRange } from "@/lib/utils";
+import { LocalScheduleRange } from "@/components/local-schedule-range";
 import type { OpenScrim } from "@/lib/types";
 
 export function ScrimCard({ scrim }: { scrim: OpenScrim }) {
@@ -22,7 +22,7 @@ export function ScrimCard({ scrim }: { scrim: OpenScrim }) {
       <div className="mt-5 space-y-3 text-sm text-muted">
         <div className="flex items-center gap-2">
           <CalendarRange className="h-4 w-4 text-accent-strong" />
-          {formatScheduleRange(scrim.startsAt, end)}
+          <LocalScheduleRange start={scrim.startsAt} end={end} />
         </div>
         <div className="flex items-center gap-2">
           <MapPinned className="h-4 w-4 text-accent-strong" />

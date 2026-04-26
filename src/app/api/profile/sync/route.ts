@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
+import { canUseDatabase } from "@/lib/database";
 import { fetchDeadlockRank } from "@/lib/deadlock";
-import { hasDatabase } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -22,7 +22,7 @@ export async function POST() {
   session.user.deadlockRank = rank.rank;
   await session.save();
 
-  if (hasDatabase()) {
+  if (await canUseDatabase()) {
     await prisma.user.updateMany({
       where: { steamId: session.user.steamId },
       data: {

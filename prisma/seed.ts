@@ -3,6 +3,9 @@ import {
   MembershipRole,
   PrismaClient,
   ScheduleEventType,
+  ScrimAvailabilityStatus,
+  ScrimMatchStatus,
+  ScrimRequestStatus,
   ScrimStatus,
 } from "@prisma/client";
 
@@ -17,6 +20,10 @@ async function main() {
   await prisma.tournamentEntry.deleteMany();
   await prisma.tournament.deleteMany();
   await prisma.scheduleEvent.deleteMany();
+  await prisma.notification.deleteMany();
+  await prisma.scrim.deleteMany();
+  await prisma.scrimBookingRequest.deleteMany();
+  await prisma.scrimAvailabilityBlock.deleteMany();
   await prisma.scrimRequest.deleteMany();
   await prisma.teamApplication.deleteMany();
   await prisma.teamMembership.deleteMany();
@@ -146,6 +153,76 @@ async function main() {
       notes: "Looking for comms-focused sets with 10 minute feedback after each map.",
       startsAt: hoursFromNow(8),
     },
+  });
+
+  const chronoshiftOpenBlock = await prisma.scrimAvailabilityBlock.create({
+    data: {
+      teamId: chronoshift.id,
+      createdByUserId: maya.id,
+      status: ScrimAvailabilityStatus.PENDING,
+      region: chronoshift.region,
+      startTime: hoursFromNow(26),
+      endTime: hoursFromNow(29),
+      notes: "Bo3 preferred with a short reset between maps.",
+    },
+  });
+
+  await prisma.scrimBookingRequest.create({
+    data: {
+      availabilityBlockId: chronoshiftOpenBlock.id,
+      requestingTeamId: harborNine.id,
+      receivingTeamId: chronoshift.id,
+      requestedByUserId: jordan.id,
+      status: ScrimRequestStatus.PENDING,
+      message: "Happy to run tempo-focused sets and share notes after map two.",
+    },
+  });
+
+  const harborBookedBlock = await prisma.scrimAvailabilityBlock.create({
+    data: {
+      teamId: harborNine.id,
+      createdByUserId: jordan.id,
+      status: ScrimAvailabilityStatus.BOOKED,
+      region: harborNine.region,
+      startTime: hoursFromNow(54),
+      endTime: hoursFromNow(57),
+      notes: "Confirmed lobby block.",
+    },
+  });
+
+  await prisma.scrim.create({
+    data: {
+      teamAId: harborNine.id,
+      teamBId: chronoshift.id,
+      availabilityBlockId: harborBookedBlock.id,
+      startTime: hoursFromNow(54),
+      endTime: hoursFromNow(57),
+      status: ScrimMatchStatus.CONFIRMED,
+      notes: "Server host rotates after each map.",
+    },
+  });
+
+  await prisma.scrimAvailabilityBlock.createMany({
+    data: [
+      {
+        teamId: glasshouse.id,
+        createdByUserId: casey.id,
+        status: ScrimAvailabilityStatus.OPEN,
+        region: glasshouse.region,
+        startTime: hoursFromNow(36),
+        endTime: hoursFromNow(39),
+        notes: "Looking for Archon to Phantom teams for execution practice.",
+      },
+      {
+        teamId: chronoshift.id,
+        createdByUserId: maya.id,
+        status: ScrimAvailabilityStatus.OPEN,
+        region: chronoshift.region,
+        startTime: hoursFromNow(78),
+        endTime: hoursFromNow(81),
+        notes: "Macro review focus, Bo3 or Bo5.",
+      },
+    ],
   });
 
   await prisma.scheduleEvent.createMany({

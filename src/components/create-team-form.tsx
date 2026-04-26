@@ -24,28 +24,48 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
         event.preventDefault();
 
         startTransition(async () => {
-          const response = await fetch("/api/teams", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(form),
-          });
-
-          const payload = (await response.json()) as { message?: string };
-          setFeedback(payload.message ?? (response.ok ? "Team created." : "Unable to create team."));
-
-          if (response.ok) {
-            setForm({
-              name: "",
-              tag: "",
-              region: "NA East",
-              rank: "Oracle",
-              focus: "",
-              openRoles: "",
-              description: "",
+          try {
+            const response = await fetch("/api/teams", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(form),
             });
-            router.refresh();
+
+            const body = await response.text();
+            let payload: { message?: string; team?: { slug?: string } } = {};
+
+            if (body) {
+              try {
+                payload = JSON.parse(body) as { message?: string; team?: { slug?: string } };
+              } catch {
+                payload = {};
+              }
+            }
+
+            setFeedback(
+              payload.message ?? (response.ok ? "Team created." : "Unable to create team."),
+            );
+
+            if (response.ok) {
+              setForm({
+                name: "",
+                tag: "",
+                region: "NA East",
+                rank: "Oracle",
+                focus: "",
+                openRoles: "",
+                description: "",
+              });
+              if (payload.team?.slug) {
+                router.push(`/teams?setup=${payload.team.slug}`);
+              } else {
+                router.refresh();
+              }
+            }
+          } catch {
+            setFeedback("Unable to create team. Please try again.");
           }
         });
       }}
@@ -62,6 +82,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           placeholder="Team name"
           className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
+          required
+          minLength={2}
         />
         <input
           value={form.tag}
@@ -69,6 +91,9 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           placeholder="Tag (e.g. CSH)"
           className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
+          required
+          minLength={2}
+          maxLength={5}
         />
         <input
           value={form.region}
@@ -76,6 +101,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           placeholder="Region"
           className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
+          required
+          minLength={2}
         />
         <input
           value={form.rank}
@@ -83,6 +110,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           placeholder="Primary rank"
           className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
+          required
+          minLength={2}
         />
       </div>
 
@@ -92,6 +121,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
         placeholder="What kind of team is this?"
         className="mt-4 w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
         disabled={disabled || isPending}
+        required
+        minLength={2}
       />
 
       <input
@@ -110,6 +141,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
         placeholder="Describe culture, schedule expectations, and goals."
         className="mt-4 min-h-28 w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
         disabled={disabled || isPending}
+        required
+        minLength={10}
       />
 
       <div className="mt-4 flex items-center justify-between gap-4">

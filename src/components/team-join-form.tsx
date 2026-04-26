@@ -17,6 +17,7 @@ export function TeamJoinForm({
 
   return (
     <form
+      id="apply"
       className="surface rounded-[28px] p-6"
       onSubmit={(event) => {
         event.preventDefault();

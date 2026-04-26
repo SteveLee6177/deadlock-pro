@@ -21,6 +21,20 @@ export type TeamSummary = {
   availability: string;
 };
 
+export type UserTeamOption = {
+  id: string;
+  slug: string;
+  name: string;
+  tag: string;
+  role: string;
+};
+
+export type ScrimTeamOption = UserTeamOption & {
+  canManageScrims: boolean;
+  region: string;
+  primaryRank: string;
+};
+
 export type TeamProfile = TeamSummary & {
   members: Array<{
     id: string;
@@ -30,6 +44,22 @@ export type TeamProfile = TeamSummary & {
     deadlockRank: string | null;
   }>;
   upcomingSchedule: ScheduleFeedEvent[];
+};
+
+export type TeamApplicationSummary = {
+  id: string;
+  profileName: string;
+  deadlockRank: string | null;
+  message: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type UserTeamWorkspace = {
+  userRole: string;
+  team: TeamProfile;
+  applications: TeamApplicationSummary[];
+  scrimRequests: OpenScrim[];
 };
 
 export type OpenScrim = {
@@ -43,6 +73,74 @@ export type OpenScrim = {
   notes: string | null;
   startsAt: string;
   status: string;
+};
+
+export type ScrimAvailabilitySummary = {
+  id: string;
+  teamId: string;
+  teamSlug: string;
+  teamName: string;
+  teamTag: string;
+  region: string;
+  rank: string;
+  startTime: string;
+  endTime: string;
+  notes: string | null;
+  status: string;
+};
+
+export type ScrimRequestSummary = {
+  id: string;
+  availabilityBlockId: string;
+  requestingTeamId: string;
+  requestingTeamName: string;
+  requestingTeamSlug: string;
+  requestingTeamRegion: string;
+  requestingTeamRank: string;
+  receivingTeamId: string;
+  receivingTeamName: string;
+  receivingTeamSlug: string;
+  receivingTeamRegion: string;
+  receivingTeamRank: string;
+  startTime: string;
+  endTime: string;
+  message: string | null;
+  status: string;
+  createdAt: string;
+};
+
+export type ScrimMatchSummary = {
+  id: string;
+  teamAId: string;
+  teamAName: string;
+  teamBId: string;
+  teamBName: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  notes: string | null;
+};
+
+export type ScrimCalendarEvent = {
+  id: string;
+  kind: "availability" | "request" | "scrim";
+  title: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+  notes: string | null;
+  opponentName: string | null;
+};
+
+export type ScrimWorkspace = {
+  team: ScrimTeamOption | null;
+  teams: ScrimTeamOption[];
+  upcomingScrims: ScrimMatchSummary[];
+  availabilityBlocks: ScrimAvailabilitySummary[];
+  openBlocks: ScrimAvailabilitySummary[];
+  incomingRequests: ScrimRequestSummary[];
+  outgoingRequests: ScrimRequestSummary[];
+  calendarEvents: ScrimCalendarEvent[];
 };
 
 export type ScheduleFeedEvent = {

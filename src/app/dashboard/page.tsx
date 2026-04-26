@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, Flame, Radar, ShieldCheck } from "lucide-react";
 import { LiveScheduleBoard } from "@/components/live/live-schedule-board";
 import { SiteHeader } from "@/components/navigation/site-header";
@@ -10,6 +11,10 @@ import { getDashboardData } from "@/lib/platform-data";
 
 export default async function DashboardPage() {
   const data = await getDashboardData();
+
+  if (!data.user) {
+    redirect("/sign-in");
+  }
 
   return (
     <div className="min-h-screen">
