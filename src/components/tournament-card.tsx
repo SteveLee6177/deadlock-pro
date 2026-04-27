@@ -4,7 +4,7 @@ import type { TournamentCard as TournamentCardType } from "@/lib/types";
 
 export function TournamentCard({ tournament }: { tournament: TournamentCardType }) {
   return (
-    <article className="surface rounded-[28px] p-6">
+    <article className="surface rounded-lg p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-accent-strong">

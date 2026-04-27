@@ -21,23 +21,23 @@ export default async function DashboardPage() {
       <SiteHeader user={data.user} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
-        <section className="surface-strong rounded-[36px] p-8 md:p-10">
+        <section className="surface-strong rounded-lg p-8 md:p-10">
           <p className="eyebrow">Command Center</p>
           <div className="mt-5 grid gap-8 lg:grid-cols-[1fr_0.8fr]">
             <div>
               <h1 className="font-display text-5xl font-bold tracking-tight text-white">
                 {data.user
-                  ? `${data.user.profileName}, your roster pipeline is live.`
+                  ? `${data.user.profileName}, your performance desk is live.`
                   : "A Deadlock hub that still works before the backend is wired."}
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-                This dashboard is the daily operating layer: roster discovery, open scrims,
-                tournament entry links, and a live-updating team schedule stream powered by Redis.
+                This dashboard is the daily operating layer for trials, open scrims, tournament
+                entry links, and a live-updating team schedule stream powered by Redis.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
                 <Link
-                  href="/scrims"
+                  href="/scrims/calendar"
                   className="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
                 >
                   Post a scrim
@@ -47,7 +47,7 @@ export default async function DashboardPage() {
                   href="/teams"
                   className="rounded-full border border-line px-6 py-3 text-sm font-medium text-white transition hover:bg-white/6"
                 >
-                  Browse teams
+                  Browse trial boards
                 </Link>
               </div>
             </div>
@@ -70,7 +70,7 @@ export default async function DashboardPage() {
                   detail: `${data.openScrims.length} open scrims surfaced with team tags, rank targets, and timing.`,
                 },
               ].map((item) => (
-                <div key={item.title} className="rounded-[24px] border border-line bg-white/5 p-5">
+                <div key={item.title} className="rounded-lg border border-line bg-white/5 p-5">
                   <item.icon className="h-5 w-5 text-accent-strong" />
                   <h2 className="mt-4 font-display text-xl font-bold text-white">{item.title}</h2>
                   <p className="mt-2 text-sm leading-7 text-muted">{item.detail}</p>
@@ -86,7 +86,7 @@ export default async function DashboardPage() {
               <div>
                 <p className="eyebrow">Featured Teams</p>
                 <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                  Recruiting and ready to practice
+                  Trial-ready and scrim active
                 </h2>
               </div>
               <Link href="/teams" className="text-sm font-medium text-accent-strong">

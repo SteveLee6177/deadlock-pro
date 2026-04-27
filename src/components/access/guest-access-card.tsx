@@ -15,9 +15,9 @@ export function GuestAccessCard({
   ctaHref?: string;
 }) {
   return (
-    <section className="surface rounded-[28px] p-6">
+    <section className="surface rounded-lg p-6">
       <div className="flex items-start gap-4">
-        <div className="mt-1 rounded-2xl border border-line bg-white/5 p-3 text-accent-strong">
+        <div className="mt-1 rounded-lg border border-line bg-white/5 p-3 text-accent-strong">
           <Lock className="h-5 w-5" />
         </div>
         <div>

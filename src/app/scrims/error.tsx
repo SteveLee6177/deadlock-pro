@@ -14,7 +14,7 @@ export default function ScrimsError({
       <SiteHeader user={null} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
-        <section className="surface-strong rounded-[36px] p-8 md:p-10">
+        <section className="surface-strong rounded-lg p-8 md:p-10">
           <p className="eyebrow">Scrims</p>
           <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
             Scrim scheduling could not load.

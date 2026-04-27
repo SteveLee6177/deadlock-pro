@@ -48,7 +48,7 @@ export default async function TeamScrimsPage({
           Back to team profile
         </Link>
 
-        <section className="surface-strong rounded-[36px] p-8 md:p-10">
+        <section className="surface-strong rounded-lg p-8 md:p-10">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <p className="eyebrow">{pageData.team.tag} Scrims</p>
@@ -99,7 +99,7 @@ export default async function TeamScrimsPage({
             <ScrimCalendarBoard events={pageData.calendarEvents} />
 
             <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-              <div className="surface rounded-[28px] p-6">
+              <div className="surface rounded-lg p-6">
                 <p className="eyebrow">Confirmed Scrims</p>
                 <h2 className="mt-2 font-display text-3xl font-bold text-white">
                   Upcoming matches
@@ -114,7 +114,7 @@ export default async function TeamScrimsPage({
                   />
                 </div>
               </div>
-              <div className="surface rounded-[28px] p-6">
+              <div className="surface rounded-lg p-6">
                 <p className="eyebrow">Pending Requests</p>
                 <h2 className="mt-2 font-display text-3xl font-bold text-white">Team queue</h2>
                 <div className="mt-6 space-y-4">
@@ -149,7 +149,7 @@ export default async function TeamScrimsPage({
         ) : null}
 
         <section className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="surface rounded-[28px] p-6">
+          <div className="surface rounded-lg p-6">
             <p className="eyebrow">Open Availability</p>
             <h2 className="mt-2 font-display text-3xl font-bold text-white">
               Public scrim blocks
@@ -181,7 +181,7 @@ export default async function TeamScrimsPage({
             {pageData.canManage ? (
               <ScrimAvailabilityForm teams={currentTeams} />
             ) : (
-              <div className="surface rounded-[28px] p-6">
+              <div className="surface rounded-lg p-6">
                 <p className="eyebrow">Request Access</p>
                 <h2 className="mt-2 font-display text-3xl font-bold text-white">
                   Official requests need team permissions

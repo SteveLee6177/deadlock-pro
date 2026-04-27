@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { CalendarDays, ClipboardList, LayoutDashboard, Search } from "lucide-react";
+import { CalendarDays, ClipboardList, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/scrims", label: "Overview", icon: LayoutDashboard },
   { href: "/scrims/calendar", label: "Calendar", icon: CalendarDays },
   { href: "/scrims/find", label: "Find Scrims", icon: Search },
   { href: "/scrims/requests", label: "Requests", icon: ClipboardList },
@@ -13,16 +12,14 @@ export function ScrimNav({
   active,
   pendingCount = 0,
 }: {
-  active: "overview" | "calendar" | "find" | "requests";
+  active: "calendar" | "find" | "requests";
   pendingCount?: number;
 }) {
   return (
     <nav className="flex flex-wrap gap-2">
       {links.map((link) => {
         const Icon = link.icon;
-        const isActive =
-          (active === "overview" && link.href === "/scrims") ||
-          (active !== "overview" && link.href.endsWith(active));
+        const isActive = link.href.endsWith(active);
 
         return (
           <Link

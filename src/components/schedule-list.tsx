@@ -15,7 +15,7 @@ export function ScheduleList({
       {events.map((event) => (
         <div
           key={event.id}
-          className="surface rounded-[24px] p-5"
+          className="surface rounded-lg p-5"
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
             <div>

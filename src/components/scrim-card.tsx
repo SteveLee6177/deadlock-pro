@@ -6,7 +6,7 @@ export function ScrimCard({ scrim }: { scrim: OpenScrim }) {
   const end = new Date(new Date(scrim.startsAt).getTime() + 3 * 60 * 60 * 1000);
 
   return (
-    <article className="surface rounded-[28px] p-6">
+    <article className="surface rounded-lg p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.22em] text-accent-strong">{scrim.requesterTag}</p>

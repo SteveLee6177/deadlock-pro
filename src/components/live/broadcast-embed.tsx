@@ -11,7 +11,7 @@ export function BroadcastEmbed({ broadcast }: { broadcast: BroadcastCard }) {
     : null;
 
   return (
-    <div className="surface rounded-[28px] overflow-hidden">
+    <div className="surface rounded-lg overflow-hidden">
       <div className="border-b border-line/70 px-5 py-4">
         <div className="flex items-start justify-between gap-4">
           <div>

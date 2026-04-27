@@ -58,7 +58,7 @@ export function ScrimCalendarBoard({
 
   if (!today) {
     return (
-      <section className="surface rounded-[28px] p-6">
+      <section className="surface rounded-lg p-6">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 text-accent-strong" />
           <div>
@@ -71,7 +71,7 @@ export function ScrimCalendarBoard({
   }
 
   return (
-    <section className="surface rounded-[28px] p-6">
+    <section className="surface rounded-lg p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 text-accent-strong" />

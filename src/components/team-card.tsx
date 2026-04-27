@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpRight, Flag, Radar, UserPlus, Users } from "lucide-react";
+import { ArrowUpRight, Flag, Radar, ShieldCheck, Users } from "lucide-react";
 import type { TeamSummary } from "@/lib/types";
 
 export function TeamCard({
@@ -10,7 +10,7 @@ export function TeamCard({
   showQuickApply?: boolean;
 }) {
   return (
-    <article className="surface rounded-[28px] p-6 transition hover:-translate-y-1 hover:border-accent/40">
+    <article className="surface rounded-lg p-6 transition hover:-translate-y-1 hover:border-accent/40">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.24em] text-accent-strong">{team.tag}</p>
@@ -44,13 +44,13 @@ export function TeamCard({
           team.openRoles.map((role) => (
             <span
               key={role}
-              className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-slate-100"
+              className="rounded-md border border-line bg-white/5 px-3 py-1 text-xs text-slate-100"
             >
               {role}
             </span>
           ))
         ) : (
-          <span className="rounded-full border border-line bg-white/5 px-3 py-1 text-xs text-muted">
+          <span className="rounded-md border border-line bg-white/5 px-3 py-1 text-xs text-muted">
             Closed roster
           </span>
         )}
@@ -62,8 +62,8 @@ export function TeamCard({
             href={`/teams/${team.slug}#apply`}
             className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
           >
-            <UserPlus className="h-4 w-4" />
-            Quick apply
+            <ShieldCheck className="h-4 w-4" />
+            Request tryout
           </Link>
         ) : null}
         <Link

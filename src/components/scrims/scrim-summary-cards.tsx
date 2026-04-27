@@ -21,7 +21,7 @@ export function EmptyScrimState({
   action?: string;
 }) {
   return (
-    <div className="rounded-[22px] border border-line bg-white/5 p-5 text-sm">
+    <div className="rounded-lg border border-line bg-white/5 p-5 text-sm">
       <p className="font-medium text-white">{title}</p>
       <p className="mt-2 leading-6 text-muted">{detail}</p>
       {href && action ? (
@@ -63,7 +63,7 @@ export function UpcomingScrimList({
         const opponent = teamId && scrim.teamAId === teamId ? scrim.teamBName : scrim.teamAName;
 
         return (
-          <article key={scrim.id} className="rounded-[22px] border border-line bg-white/5 p-5">
+          <article key={scrim.id} className="rounded-lg border border-line bg-white/5 p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">
@@ -96,7 +96,7 @@ export function AvailabilityBlockCard({
   action?: ReactNode;
 }) {
   return (
-    <article className="rounded-[22px] border border-line bg-white/5 p-5">
+    <article className="rounded-lg border border-line bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">{block.teamTag}</p>
@@ -150,7 +150,7 @@ export function RequestCard({
     direction === "incoming" ? request.requestingTeamRank : request.receivingTeamRank;
 
   return (
-    <article className="rounded-[22px] border border-line bg-white/5 p-5">
+    <article className="rounded-lg border border-line bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">

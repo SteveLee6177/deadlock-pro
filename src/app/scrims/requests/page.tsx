@@ -25,7 +25,7 @@ export default async function ScrimRequestsPage() {
 
         {workspace.team ? (
           <>
-            <section className="surface-strong rounded-[36px] p-8 md:p-10">
+            <section className="surface-strong rounded-lg p-8 md:p-10">
               <p className="eyebrow">Requests</p>
               <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
                 {canManage ? "Accept, decline, and track scrim requests." : "Scrim requests are read-only."}
@@ -39,7 +39,7 @@ export default async function ScrimRequestsPage() {
 
             {canManage ? (
               <section className="grid gap-6 xl:grid-cols-2">
-                <div className="surface rounded-[28px] p-6">
+                <div className="surface rounded-lg p-6">
                   <p className="eyebrow">Incoming Requests</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">
                     Review queue
@@ -83,7 +83,7 @@ export default async function ScrimRequestsPage() {
                   </div>
                 </div>
 
-                <div className="surface rounded-[28px] p-6">
+                <div className="surface rounded-lg p-6">
                   <p className="eyebrow">Outgoing Requests</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">Sent requests</h2>
                   <div className="mt-6 space-y-4">
@@ -116,7 +116,7 @@ export default async function ScrimRequestsPage() {
               </section>
             ) : (
               <section className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-                <div className="surface rounded-[28px] p-6">
+                <div className="surface rounded-lg p-6">
                   <p className="eyebrow">Upcoming Scrims</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">
                     Confirmed schedule
@@ -125,7 +125,7 @@ export default async function ScrimRequestsPage() {
                     <UpcomingScrimList scrims={workspace.upcomingScrims} teamId={workspace.team.id} />
                   </div>
                 </div>
-                <div className="surface rounded-[28px] p-6">
+                <div className="surface rounded-lg p-6">
                   <p className="eyebrow">Request Status</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">Read-only queue</h2>
                   <div className="mt-6 space-y-4">
@@ -148,7 +148,7 @@ export default async function ScrimRequestsPage() {
             )}
           </>
         ) : (
-          <section className="surface-strong rounded-[36px] p-8 md:p-10">
+          <section className="surface-strong rounded-lg p-8 md:p-10">
             <p className="eyebrow">Requests</p>
             <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
               Join or create a team to request scrims.

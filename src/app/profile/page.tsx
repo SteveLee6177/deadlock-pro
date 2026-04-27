@@ -15,7 +15,7 @@ export default async function ProfilePage() {
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
         {user ? (
           <>
-            <section className="surface-strong rounded-[36px] p-8 md:p-10">
+            <section className="surface-strong rounded-lg p-8 md:p-10">
               <p className="eyebrow">Profile</p>
               <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
                 {user.profileName}
@@ -32,7 +32,7 @@ export default async function ProfilePage() {
               </div>
             </section>
 
-            <section className="surface rounded-[28px] p-6">
+            <section className="surface rounded-lg p-6">
               <div className="flex items-center gap-3">
                 <Users className="h-5 w-5 text-accent-strong" />
                 <div>
@@ -48,8 +48,8 @@ export default async function ProfilePage() {
                   teams.map((team) => (
                     <Link
                       key={team.id}
-                      href={`/teams?setup=${team.slug}`}
-                      className="flex items-center justify-between gap-4 rounded-[22px] border border-line bg-white/5 p-4 transition hover:border-accent/40"
+                      href={`/teams?team=${team.slug}`}
+                      className="flex items-center justify-between gap-4 rounded-lg border border-line bg-white/5 p-4 transition hover:border-accent/40"
                     >
                       <div>
                         <p className="font-medium text-white">{team.name}</p>
@@ -61,13 +61,13 @@ export default async function ProfilePage() {
                     </Link>
                   ))
                 ) : (
-                  <div className="rounded-[22px] border border-line bg-white/5 p-4">
+                  <div className="rounded-lg border border-line bg-white/5 p-4">
                     <p className="text-sm text-muted">You are not on a team yet.</p>
                     <Link
                       href="/teams"
                       className="mt-4 inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
                     >
-                      Browse teams
+                      Browse trials
                     </Link>
                   </div>
                 )}

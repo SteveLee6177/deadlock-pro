@@ -7,7 +7,7 @@ export default function ScrimsLoading() {
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-wrap gap-2">
-          {["Overview", "Calendar", "Find Scrims", "Requests"].map((label) => (
+          {["Calendar", "Find Scrims", "Requests"].map((label) => (
             <div
               key={label}
               className="h-10 w-32 rounded-full border border-line bg-white/5"
@@ -15,7 +15,7 @@ export default function ScrimsLoading() {
           ))}
         </div>
 
-        <section className="surface-strong rounded-[36px] p-8 md:p-10">
+        <section className="surface-strong rounded-lg p-8 md:p-10">
           <div className="h-4 w-24 rounded-full bg-white/10" />
           <div className="mt-5 h-12 max-w-3xl rounded-full bg-white/10" />
           <div className="mt-4 h-7 max-w-2xl rounded-full bg-white/10" />
@@ -27,7 +27,7 @@ export default function ScrimsLoading() {
 
         <section className="grid gap-6 xl:grid-cols-2">
           {Array.from({ length: 4 }, (_, index) => (
-            <div key={index} className="surface rounded-[28px] p-6">
+            <div key={index} className="surface rounded-lg p-6">
               <div className="h-4 w-28 rounded-full bg-white/10" />
               <div className="mt-4 h-8 w-64 rounded-full bg-white/10" />
               <div className="mt-6 space-y-3">

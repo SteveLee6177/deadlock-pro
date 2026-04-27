@@ -11,7 +11,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
     name: "",
     tag: "",
     region: "NA East",
-    rank: "Oracle",
+    rank: "Eternus 6",
     focus: "",
     openRoles: "",
     description: "",
@@ -19,7 +19,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
 
   return (
     <form
-      className="surface rounded-[28px] p-6"
+      className="surface rounded-lg p-6"
       onSubmit={(event) => {
         event.preventDefault();
 
@@ -53,13 +53,13 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
                 name: "",
                 tag: "",
                 region: "NA East",
-                rank: "Oracle",
+                rank: "Eternus 6",
                 focus: "",
                 openRoles: "",
                 description: "",
               });
               if (payload.team?.slug) {
-                router.push(`/teams?setup=${payload.team.slug}`);
+                router.push(`/teams?team=${payload.team.slug}`);
               } else {
                 router.refresh();
               }
@@ -71,8 +71,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
       }}
     >
       <div className="mb-5">
-        <p className="eyebrow">Start A Team</p>
-        <h3 className="mt-2 font-display text-2xl font-bold text-white">Create a roster hub</h3>
+        <p className="eyebrow">Create Team</p>
+        <h3 className="mt-2 font-display text-2xl font-bold text-white">Start a team profile</h3>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -80,7 +80,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           value={form.name}
           onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
           placeholder="Team name"
-          className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
           required
           minLength={2}
@@ -89,7 +89,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           value={form.tag}
           onChange={(event) => setForm((current) => ({ ...current, tag: event.target.value }))}
           placeholder="Tag (e.g. CSH)"
-          className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
           required
           minLength={2}
@@ -99,7 +99,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           value={form.region}
           onChange={(event) => setForm((current) => ({ ...current, region: event.target.value }))}
           placeholder="Region"
-          className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
           required
           minLength={2}
@@ -108,7 +108,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
           value={form.rank}
           onChange={(event) => setForm((current) => ({ ...current, rank: event.target.value }))}
           placeholder="Primary rank"
-          className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+          className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
           disabled={disabled || isPending}
           required
           minLength={2}
@@ -118,8 +118,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
       <input
         value={form.focus}
         onChange={(event) => setForm((current) => ({ ...current, focus: event.target.value }))}
-        placeholder="What kind of team is this?"
-        className="mt-4 w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+        placeholder="Performance focus, comp identity, or trial standard"
+        className="mt-4 w-full rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
         disabled={disabled || isPending}
         required
         minLength={2}
@@ -128,8 +128,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
       <input
         value={form.openRoles}
         onChange={(event) => setForm((current) => ({ ...current, openRoles: event.target.value }))}
-        placeholder="Open roles, comma separated"
-        className="mt-4 w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+        placeholder="Trial roles, comma separated"
+        className="mt-4 w-full rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
         disabled={disabled || isPending}
       />
 
@@ -138,8 +138,8 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
         onChange={(event) =>
           setForm((current) => ({ ...current, description: event.target.value }))
         }
-        placeholder="Describe culture, schedule expectations, and goals."
-        className="mt-4 min-h-28 w-full rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+        placeholder="Describe schedule expectations, rank bar, scrim volume, review process, and tournament goals."
+        className="mt-4 min-h-28 w-full rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
         disabled={disabled || isPending}
         required
         minLength={10}

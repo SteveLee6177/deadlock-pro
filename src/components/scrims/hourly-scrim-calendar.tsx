@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addDays, startOfWeek } from "date-fns";
-import { CalendarDays, ChevronLeft, ChevronRight, Plus, Send, X } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Send, X } from "lucide-react";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
 import { cn } from "@/lib/utils";
 import {
@@ -17,8 +17,8 @@ import type {
   ScrimTeamOption,
 } from "@/lib/types";
 
-const HOUR_ROW_HEIGHT = 62;
-const VISIBLE_HOUR_ROWS = 3;
+const HOUR_ROW_HEIGHT = 76;
+const VISIBLE_HOUR_ROWS = 5;
 const DEFAULT_SCROLL_HOUR = 19;
 
 const EVENT_STYLES: Record<ScrimCalendarEvent["kind"], string> = {
@@ -30,6 +30,11 @@ const EVENT_STYLES: Record<ScrimCalendarEvent["kind"], string> = {
 type SelectedSlot = {
   startTime: string;
   endTime: string;
+};
+
+type DayScrollState = {
+  canScrollDown: boolean;
+  canScrollUp: boolean;
 };
 
 function makeLocalSlot(day: Date, hour: number) {
@@ -71,6 +76,13 @@ function overlapsHour(startIso: string, endIso: string, slotStart: Date, slotEnd
   return start < slotEnd && end > slotStart;
 }
 
+function blocksNewAvailability(event: ScrimCalendarEvent) {
+  return (
+    (event.kind === "availability" || event.kind === "scrim") &&
+    event.status !== "CANCELLED"
+  );
+}
+
 function eventStyle(event: ScrimCalendarEvent) {
   if (event.status === "CANCELLED") {
     return "border-rose-300/30 bg-rose-300/10";
@@ -108,6 +120,7 @@ export function HourlyScrimCalendar({
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [pendingCancel, setPendingCancel] = useState<ScrimCalendarEvent | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [dayScrollState, setDayScrollState] = useState<Record<string, DayScrollState>>({});
   const [isActionPending, startActionTransition] = useTransition();
   const dayScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
@@ -134,14 +147,54 @@ export function HourlyScrimCalendar({
       return;
     }
 
-    days.forEach((day) => {
-      const scroller = dayScrollRefs.current[day.toISOString()];
+    const frame = window.requestAnimationFrame(() => {
+      days.forEach((day) => {
+        const dayKey = day.toISOString();
+        const scroller = dayScrollRefs.current[dayKey];
 
-      if (scroller) {
-        scroller.scrollTop = DEFAULT_SCROLL_HOUR * HOUR_ROW_HEIGHT;
-      }
+        if (scroller) {
+          scroller.scrollTop = DEFAULT_SCROLL_HOUR * HOUR_ROW_HEIGHT;
+          updateDayScrollState(dayKey, scroller);
+        }
+      });
     });
+
+    return () => window.cancelAnimationFrame(frame);
   }, [days]);
+
+  function updateDayScrollState(dayKey: string, scroller: HTMLDivElement) {
+    const canScrollUp = scroller.scrollTop > 2;
+    const canScrollDown = scroller.scrollTop + scroller.clientHeight < scroller.scrollHeight - 2;
+
+    setDayScrollState((current) => {
+      const previous = current[dayKey];
+
+      if (
+        previous?.canScrollUp === canScrollUp &&
+        previous.canScrollDown === canScrollDown
+      ) {
+        return current;
+      }
+
+      return {
+        ...current,
+        [dayKey]: { canScrollDown, canScrollUp },
+      };
+    });
+  }
+
+  function scrollDay(dayKey: string, direction: "down" | "up") {
+    const scroller = dayScrollRefs.current[dayKey];
+
+    if (!scroller) {
+      return;
+    }
+
+    scroller.scrollBy({
+      behavior: "smooth",
+      top: HOUR_ROW_HEIGHT * 2 * (direction === "down" ? 1 : -1),
+    });
+  }
 
   function openSlot(day: Date, hour: number) {
     const start = makeLocalSlot(day, hour);
@@ -188,7 +241,7 @@ export function HourlyScrimCalendar({
 
   if (!timeZone || !weekStart) {
     return (
-      <section className="surface rounded-[28px] p-5">
+      <section className="surface rounded-lg p-5">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 text-accent-strong" />
           <div>
@@ -203,7 +256,7 @@ export function HourlyScrimCalendar({
   const currentZoneName = getTimeZoneName(new Date(), timeZone);
 
   return (
-    <section className="surface rounded-[28px] p-5">
+    <section className="surface rounded-lg p-5">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-3">
           <CalendarDays className="h-5 w-5 text-accent-strong" />
@@ -247,96 +300,135 @@ export function HourlyScrimCalendar({
 
       <div className="mt-5 overflow-x-auto">
         <div className="grid min-w-[1040px] grid-cols-7 gap-3">
-          {days.map((day) => (
-            <div key={day.toISOString()} className="overflow-hidden rounded-[18px] border border-line bg-white/4">
+          {days.map((day) => {
+            const dayKey = day.toISOString();
+            const scrollState = dayScrollState[dayKey] ?? {
+              canScrollDown: true,
+              canScrollUp: false,
+            };
+
+            return (
+            <div key={dayKey} className="group overflow-hidden rounded-[18px] border border-line bg-white/4">
               <div className="border-b border-line bg-slate-950/35 px-3 py-3">
                 <p className="text-sm font-semibold text-white">{formatLocalDay(day, timeZone)}</p>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted">
                   {getTimeZoneName(day, timeZone)}
                 </p>
               </div>
-              <div
-                ref={(node) => {
-                  dayScrollRefs.current[day.toISOString()] = node;
-                }}
-                className="overflow-y-auto"
-                style={{ maxHeight: HOUR_ROW_HEIGHT * VISIBLE_HOUR_ROWS }}
-              >
-                {hours.map((hour) => {
-                  const slotStart = makeLocalSlot(day, hour);
-                  const slotEnd = makeLocalSlot(day, hour + 1);
-                  const slotEvents = events.filter((event) =>
-                    overlapsHour(event.startTime, event.endTime, slotStart, slotEnd),
-                  );
+              <div className="relative">
+                <div
+                  ref={(node) => {
+                    dayScrollRefs.current[dayKey] = node;
+                  }}
+                  onScroll={(event) => updateDayScrollState(dayKey, event.currentTarget)}
+                  className="calendar-day-scroll overflow-y-auto scroll-smooth"
+                  style={{ maxHeight: HOUR_ROW_HEIGHT * VISIBLE_HOUR_ROWS }}
+                  aria-label={`${formatLocalDay(day, timeZone)} scrollable hourly schedule`}
+                >
+                  {hours.map((hour) => {
+                    const slotStart = makeLocalSlot(day, hour);
+                    const slotEnd = makeLocalSlot(day, hour + 1);
+                    const slotEvents = events.filter((event) =>
+                      overlapsHour(event.startTime, event.endTime, slotStart, slotEnd),
+                    );
+                    const hasScheduledBlock = slotEvents.some(blocksNewAvailability);
 
-                  return (
-                    <div
-                      key={hour}
-                      className="relative border-b border-line px-3 py-2 last:border-b-0"
-                      style={{ minHeight: HOUR_ROW_HEIGHT }}
-                    >
-                      <div className="mb-2 flex items-center justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-white">{formatLocalHour(slotStart, timeZone)}</p>
-                          <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
-                            {getTimeZoneName(slotStart, timeZone)}
-                          </p>
-                        </div>
-                        {canManage ? (
-                          <button
-                            type="button"
-                            onClick={() => openSlot(day, hour)}
-                            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-line bg-slate-950/70 text-accent-strong transition hover:border-accent hover:bg-accent hover:text-slate-950"
-                            aria-label={`Add Looking For Scrim block for ${formatLocalDay(day, timeZone)} at ${formatLocalHour(slotStart, timeZone)} ${getTimeZoneName(slotStart, timeZone)}`}
-                          >
-                            <Plus className="h-4 w-4" />
-                          </button>
-                        ) : null}
-                      </div>
-                      <div className="space-y-1.5">
-                        {slotEvents.map((event) => (
-                          <div
-                            key={`${event.kind}-${event.id}`}
-                            className={cn("rounded-[12px] border p-2", eventStyle(event))}
-                          >
-                            <div className="flex flex-wrap items-start justify-between gap-1.5">
-                              <div>
-                                <p className="text-xs font-semibold text-white">{eventTitle(event)}</p>
-                                {event.kind === "availability" ? (
-                                  <p className="mt-0.5 text-[11px] leading-4 text-muted">
-                                    {selectedTeam.name} · {selectedTeam.region}
-                                  </p>
-                                ) : null}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <ScrimStatusPill status={event.status} className="px-2 py-0.5 text-[9px]" />
-                                {canCancelEvent(event) ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setPendingCancel(event)}
-                                    disabled={isActionPending}
-                                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 bg-rose-300/10 text-rose-200 transition hover:bg-rose-300 hover:text-slate-950 disabled:opacity-50"
-                                    aria-label={`Cancel ${eventTitle(event)}`}
-                                  >
-                                    <X className="h-3.5 w-3.5" />
-                                  </button>
-                                ) : null}
-                              </div>
-                            </div>
-                            {event.kind !== "availability" && event.notes ? (
-                              <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted">
-                                {event.notes}
-                              </p>
-                            ) : null}
+                    return (
+                      <div
+                        key={hour}
+                        className="relative border-b border-line px-3 py-3 last:border-b-0"
+                        style={{ minHeight: HOUR_ROW_HEIGHT }}
+                      >
+                        <div className="mb-3 flex items-center justify-between gap-2">
+                          <div>
+                            <p className="text-sm font-semibold text-white">{formatLocalHour(slotStart, timeZone)}</p>
+                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
+                              {getTimeZoneName(slotStart, timeZone)}
+                            </p>
                           </div>
-                        ))}
+                          {canManage && !hasScheduledBlock ? (
+                            <button
+                              type="button"
+                              onClick={() => openSlot(day, hour)}
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-slate-950/70 text-accent-strong transition hover:border-accent hover:bg-accent hover:text-slate-950"
+                              aria-label={`Add Looking For Scrim block for ${formatLocalDay(day, timeZone)} at ${formatLocalHour(slotStart, timeZone)} ${getTimeZoneName(slotStart, timeZone)}`}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                        <div className="space-y-1.5">
+                          {slotEvents.map((event) => (
+                            <div
+                              key={`${event.kind}-${event.id}`}
+                              className={cn("rounded-[12px] border p-2", eventStyle(event))}
+                            >
+                              <div className="flex flex-wrap items-start justify-between gap-1.5">
+                                <div>
+                                  <p className="text-xs font-semibold text-white">{eventTitle(event)}</p>
+                                  {event.kind === "availability" ? (
+                                    <p className="mt-0.5 text-[11px] leading-4 text-muted">
+                                      {selectedTeam.name} · {selectedTeam.region}
+                                    </p>
+                                  ) : null}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <ScrimStatusPill status={event.status} className="px-2 py-0.5 text-[9px]" />
+                                  {canCancelEvent(event) ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => setPendingCancel(event)}
+                                      disabled={isActionPending}
+                                      className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 bg-rose-300/10 text-rose-200 transition hover:bg-rose-300 hover:text-slate-950 disabled:opacity-50"
+                                      aria-label={`Cancel ${eventTitle(event)}`}
+                                    >
+                                      <X className="h-3.5 w-3.5" />
+                                    </button>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {event.kind !== "availability" && event.notes ? (
+                                <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted">
+                                  {event.notes}
+                                </p>
+                              ) : null}
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-[#0a1724] to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0a1724] to-transparent" />
+                {scrollState.canScrollUp ? (
+                  <div className="absolute inset-x-0 top-1 flex justify-center opacity-0 transition group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => scrollDay(dayKey, "up")}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
+                    aria-label={`Scroll ${formatLocalDay(day, timeZone)} earlier by two hours`}
+                  >
+                    <ChevronUp className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                ) : null}
+                {scrollState.canScrollDown ? (
+                  <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 transition group-hover:opacity-100">
+                  <button
+                    type="button"
+                    onClick={() => scrollDay(dayKey, "down")}
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
+                    aria-label={`Scroll ${formatLocalDay(day, timeZone)} later by two hours`}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                ) : null}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -393,7 +485,7 @@ function ConfirmCancelDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
-      <div className="w-full max-w-md rounded-[28px] border border-line bg-[#0a1724] p-6 shadow-2xl">
+      <div className="w-full max-w-md rounded-lg border border-line bg-[#0a1724] p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="eyebrow">{isLfs ? "Remove LFS" : "Cancel Scrim"}</p>
@@ -469,7 +561,7 @@ function CalendarSlotModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
-      <div className="w-full max-w-2xl rounded-[28px] border border-line bg-[#0a1724] p-6 shadow-2xl">
+      <div className="w-full max-w-2xl rounded-lg border border-line bg-[#0a1724] p-6 shadow-2xl">
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="eyebrow">Calendar Slot</p>

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Deadlock Pro",
+  title: "Scrimlock",
   description:
-    "Team discovery, live scrim scheduling, tournament tracking, and Twitch embeds for the Deadlock esports scene.",
+    "Fast scrim scheduling, team discovery, and practice calendars for serious Deadlock players.",
 };
 
 export default function RootLayout({

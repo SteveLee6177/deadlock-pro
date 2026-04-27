@@ -28,7 +28,7 @@ export function ScrimPlanner({
     startsAt: "",
     region: "NA East",
     format: "Bo3",
-    wantedRank: "Oracle+",
+    wantedRank: "Eternus 5+",
     notes: "",
   });
   const [scheduleForm, setScheduleForm] = useState<FormState>({
@@ -43,7 +43,7 @@ export function ScrimPlanner({
   return (
     <div className="grid gap-6 xl:grid-cols-2">
       <form
-        className="surface rounded-[28px] p-6"
+        className="surface rounded-lg p-6"
         onSubmit={(event) => {
           event.preventDefault();
 
@@ -73,7 +73,7 @@ export function ScrimPlanner({
 
         <div className="grid gap-4">
           {teams.length === 0 ? (
-            <p className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-muted">
+            <p className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-muted">
               Create or join a team first to post a scrim request.
             </p>
           ) : null}
@@ -82,7 +82,7 @@ export function ScrimPlanner({
             onChange={(event) =>
               setScrimForm((current) => ({ ...current, requesterTeamId: event.target.value }))
             }
-            className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           >
             {teams.map((team) => (
@@ -97,7 +97,7 @@ export function ScrimPlanner({
             onChange={(event) =>
               setScrimForm((current) => ({ ...current, startsAt: event.target.value }))
             }
-            className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           />
           <div className="grid gap-4 md:grid-cols-3">
@@ -107,7 +107,7 @@ export function ScrimPlanner({
                 setScrimForm((current) => ({ ...current, region: event.target.value }))
               }
               placeholder="Region"
-              className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
             />
             <input
@@ -116,7 +116,7 @@ export function ScrimPlanner({
                 setScrimForm((current) => ({ ...current, format: event.target.value }))
               }
               placeholder="Format"
-              className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
             />
             <input
@@ -125,7 +125,7 @@ export function ScrimPlanner({
                 setScrimForm((current) => ({ ...current, wantedRank: event.target.value }))
               }
               placeholder="Target rank"
-              className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
             />
           </div>
@@ -134,8 +134,8 @@ export function ScrimPlanner({
             onChange={(event) =>
               setScrimForm((current) => ({ ...current, notes: event.target.value }))
             }
-            placeholder="Preferred goals, feedback structure, or lobby notes."
-            className="min-h-28 rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            placeholder="Target practice goals, feedback structure, and lobby notes."
+            className="min-h-28 rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           />
         </div>
@@ -150,7 +150,7 @@ export function ScrimPlanner({
       </form>
 
       <form
-        className="surface rounded-[28px] p-6"
+        className="surface rounded-lg p-6"
         onSubmit={(event) => {
           event.preventDefault();
 
@@ -190,7 +190,7 @@ export function ScrimPlanner({
 
         <div className="grid gap-4">
           {teams.length === 0 ? (
-            <p className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-muted">
+            <p className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-muted">
               Scheduling is limited to teams you are a member of.
             </p>
           ) : null}
@@ -199,7 +199,7 @@ export function ScrimPlanner({
             onChange={(event) =>
               setScheduleForm((current) => ({ ...current, teamId: event.target.value }))
             }
-            className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           >
             {teams.map((team) => (
@@ -214,7 +214,7 @@ export function ScrimPlanner({
               setScheduleForm((current) => ({ ...current, title: event.target.value }))
             }
             placeholder="Event title"
-            className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           />
           <div className="grid gap-4 md:grid-cols-2">
@@ -224,7 +224,7 @@ export function ScrimPlanner({
               onChange={(event) =>
                 setScheduleForm((current) => ({ ...current, startsAt: event.target.value }))
               }
-              className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
             />
             <input
@@ -233,7 +233,7 @@ export function ScrimPlanner({
               onChange={(event) =>
                 setScheduleForm((current) => ({ ...current, endsAt: event.target.value }))
               }
-              className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+              className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
             />
           </div>
@@ -243,7 +243,7 @@ export function ScrimPlanner({
               setScheduleForm((current) => ({ ...current, location: event.target.value }))
             }
             placeholder="Location"
-            className="rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           />
           <textarea
@@ -252,7 +252,7 @@ export function ScrimPlanner({
               setScheduleForm((current) => ({ ...current, notes: event.target.value }))
             }
             placeholder="Anything teammates need before the block starts?"
-            className="min-h-28 rounded-2xl border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
+            className="min-h-28 rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             disabled={disabled || isPending || teams.length === 0}
           />
         </div>

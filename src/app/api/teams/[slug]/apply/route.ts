@@ -14,7 +14,7 @@ export async function POST(
 ) {
   if (!(await canUseDatabase())) {
     return NextResponse.json(
-      { message: "Postgres is unavailable right now, so applications cannot be submitted yet." },
+      { message: "Postgres is unavailable right now, so trial requests cannot be submitted yet." },
       { status: 503 },
     );
   }
@@ -66,5 +66,5 @@ export async function POST(
     },
   });
 
-  return NextResponse.json({ message: "Application sent to the team captain." });
+  return NextResponse.json({ message: "Trial request sent to the team captain." });
 }

@@ -31,7 +31,7 @@ export default async function TeamPage({
         </Link>
 
         <section className="grid gap-8 xl:grid-cols-[1fr_0.85fr]">
-          <div className="surface-strong rounded-[36px] p-8 md:p-10">
+          <div className="surface-strong rounded-lg p-8 md:p-10">
             <p className="eyebrow">{team.tag}</p>
             <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
               {team.name}
@@ -73,19 +73,19 @@ export default async function TeamPage({
           ) : (
             <GuestAccessCard
               eyebrow="View Only"
-              title="Applications unlock after Steam sign-in"
-              description="Roster details stay visible for guests, but contacting this team and sending an intro requires a signed-in Steam identity."
+              title="Trial requests unlock after Steam sign-in"
+              description="Roster standards stay visible for guests, but requesting a tryout block requires a signed-in Steam identity."
             />
           )}
         </section>
 
         <section className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
-          <div className="surface rounded-[28px] p-6">
+          <div className="surface rounded-lg p-6">
             <p className="eyebrow">Roster</p>
             <h2 className="mt-2 font-display text-3xl font-bold text-white">Current members</h2>
             <div className="mt-6 space-y-4">
               {team.members.map((member) => (
-                <div key={member.id} className="rounded-[22px] border border-line bg-white/5 p-4">
+                <div key={member.id} className="rounded-lg border border-line bg-white/5 p-4">
                   <p className="font-medium text-white">{member.profileName}</p>
                   <p className="mt-1 text-sm text-muted">{member.role}</p>
                   {member.deadlockRank ? (
@@ -102,7 +102,7 @@ export default async function TeamPage({
             <div className="mb-6">
               <p className="eyebrow">Upcoming Schedule</p>
               <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                Practices, scrims, and review blocks
+                Practice, scrim, and review blocks
               </h2>
             </div>
             <ScheduleList events={team.upcomingSchedule} />

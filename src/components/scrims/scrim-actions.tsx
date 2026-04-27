@@ -34,7 +34,7 @@ export function ScrimAvailabilityForm({
 
   return (
     <form
-      className={compact ? "grid gap-3" : "surface rounded-[28px] p-6"}
+      className={compact ? "grid gap-3" : "surface rounded-lg p-6"}
       onSubmit={(event) => {
         event.preventDefault();
 
@@ -199,7 +199,7 @@ export function RequestScrimButton({
       {open ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
           <form
-            className="w-full max-w-lg rounded-[28px] border border-line bg-[#0a1724] p-6 shadow-2xl"
+            className="w-full max-w-lg rounded-lg border border-line bg-[#0a1724] p-6 shadow-2xl"
             onSubmit={(event) => {
               event.preventDefault();
 
