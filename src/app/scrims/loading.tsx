@@ -7,7 +7,7 @@ export default function ScrimsLoading() {
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
         <div className="flex flex-wrap gap-2">
-          {["Calendar", "Find Scrims", "Requests"].map((label) => (
+          {["Calendar", "Find Scrims", "Current Scrims", "Incoming Scrims", "Sent Scrims"].map((label) => (
             <div
               key={label}
               className="h-10 w-32 rounded-full border border-line bg-white/5"

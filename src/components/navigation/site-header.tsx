@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserCircle, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FocusEvent } from "react";
+import { TeamInviteBell } from "@/components/navigation/team-invite-bell";
 import type { SessionUser, UserTeamOption } from "@/lib/types";
 
 const navItems = [
@@ -175,6 +176,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
         <div className="flex items-center gap-3">
           {user ? (
             <>
+              <TeamInviteBell />
               <div className="hidden rounded-full border border-line bg-white/4 px-4 py-2 text-sm md:block">
                 <span className="text-muted">Signed in as </span>
                 <span className="font-medium">{user.profileName}</span>

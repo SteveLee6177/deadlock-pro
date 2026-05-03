@@ -5,10 +5,16 @@ import { getCurrentUser } from "@/lib/auth";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { normalizeRegion } from "@/lib/regions";
+import {
+  canReapplyToDeclinedTeamApplication,
+  canStoreTeamApplicationDeclinedAt,
+} from "@/lib/team-applications";
 import type {
   BroadcastCard,
   DashboardData,
   OpenScrim,
+  PlayerApplicationSummary,
   ScheduleFeedEvent,
   TeamApplicationSummary,
   TeamProfile,
@@ -43,13 +49,27 @@ function mapTeam(team: {
   openRoles: string[];
   memberships: Array<unknown>;
   scheduleEvents?: Array<{ startsAt: Date }>;
+  applications?: Array<{ status: string; createdAt: Date; declinedAt?: Date | null }>;
 }): TeamSummary {
+  const currentUserApplication = team.applications?.[0];
+  const applicationCooldown = currentUserApplication
+    ? {
+        createdAt: currentUserApplication.createdAt,
+        declinedAt: currentUserApplication.declinedAt ?? null,
+      }
+    : null;
+  let currentUserCanApply = !currentUserApplication;
+
+  if (currentUserApplication?.status === "DECLINED" && applicationCooldown) {
+    currentUserCanApply = canReapplyToDeclinedTeamApplication(applicationCooldown);
+  }
+
   return {
     id: team.id,
     slug: team.slug,
     name: team.name,
     tag: team.tag,
-    region: team.region,
+    region: normalizeRegion(team.region),
     focus: team.focus,
     primaryRank: team.primaryRank,
     description: team.description,
@@ -59,6 +79,8 @@ function mapTeam(team: {
     availability: team.scheduleEvents?.[0]
       ? `Next block ${formatDistanceToNow(team.scheduleEvents[0].startsAt, { addSuffix: true })}`
       : "Schedule open",
+    currentUserApplicationStatus: currentUserApplication?.status ?? null,
+    currentUserCanApply,
   };
 }
 
@@ -101,7 +123,7 @@ function mapScrimRequest(scrim: {
     requesterTeamId: scrim.requesterTeamId,
     requesterTeamName: scrim.requesterTeam.name,
     requesterTag: scrim.requesterTeam.tag,
-    region: scrim.region,
+    region: normalizeRegion(scrim.region),
     format: scrim.format,
     wantedRank: scrim.wantedRank,
     notes: scrim.notes,
@@ -144,7 +166,7 @@ export async function getFeaturedTeams(): Promise<TeamSummary[]> {
           scheduleEvents: {
             orderBy: { startsAt: "asc" },
             take: 1,
-            where: { startsAt: { gte: new Date() } },
+            where: { endsAt: { gte: new Date() } },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -162,13 +184,28 @@ export async function getTeamsDirectory(): Promise<TeamSummary[]> {
 
   return withFallback(
     async () => {
+      const [user, includeDeclinedAt] = await Promise.all([
+        getCurrentUser(),
+        canStoreTeamApplicationDeclinedAt(),
+      ]);
       const teams = await prisma.team.findMany({
         include: {
+          applications: {
+            where: {
+              user: {
+                steamId: user?.steamId ?? "__signed_out__",
+              },
+            },
+            select: includeDeclinedAt
+              ? { status: true, createdAt: true, declinedAt: true }
+              : { status: true, createdAt: true },
+            take: 1,
+          },
           memberships: true,
           scheduleEvents: {
             orderBy: { startsAt: "asc" },
             take: 1,
-            where: { startsAt: { gte: new Date() } },
+            where: { endsAt: { gte: new Date() } },
           },
         },
         orderBy: [{ recruiting: "desc" }, { createdAt: "desc" }],
@@ -206,6 +243,52 @@ export async function getCurrentUserTeams(): Promise<UserTeamOption[]> {
   }
 }
 
+export async function getCurrentUserApplications(): Promise<PlayerApplicationSummary[]> {
+  noStore();
+
+  if (!(await canUseDatabase())) {
+    return [];
+  }
+
+  try {
+    const membershipData = await getCurrentUserMemberships();
+
+    if (!membershipData) {
+      return [];
+    }
+
+    const applications = await prisma.teamApplication.findMany({
+      where: { userId: membershipData.user.id },
+      include: {
+        team: {
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            region: true,
+            primaryRank: true,
+            recruiting: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return applications.map((application) => ({
+      id: application.id,
+      status: application.status,
+      message: application.message,
+      createdAt: application.createdAt.toISOString(),
+      team: {
+        ...application.team,
+        region: normalizeRegion(application.team.region),
+      },
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export async function getCurrentUserTeamWorkspace(
   preferredSlug?: string,
 ): Promise<UserTeamWorkspace | null> {
@@ -231,8 +314,19 @@ export async function getCurrentUserTeamWorkspace(
       where: { id: selectedMembership.teamId },
       include: {
         applications: {
-          include: {
-            user: true,
+          where: { status: "PENDING" },
+          select: {
+            id: true,
+            userId: true,
+            message: true,
+            status: true,
+            createdAt: true,
+            user: {
+              select: {
+                profileName: true,
+                deadlockRank: true,
+              },
+            },
           },
           orderBy: { createdAt: "desc" },
           take: 6,
@@ -255,7 +349,7 @@ export async function getCurrentUserTeamWorkspace(
             team: true,
           },
           orderBy: { startsAt: "asc" },
-          where: { startsAt: { gte: new Date() } },
+          where: { endsAt: { gte: new Date() } },
           take: 6,
         },
       },
@@ -267,6 +361,7 @@ export async function getCurrentUserTeamWorkspace(
 
     const applications: TeamApplicationSummary[] = team.applications.map((application) => ({
       id: application.id,
+      userId: application.userId,
       profileName: application.user.profileName,
       deadlockRank: application.user.deadlockRank,
       message: application.message,
@@ -300,9 +395,24 @@ export async function getTeamProfile(slug: string): Promise<TeamProfile | null> 
 
   return withFallback(
     async () => {
+      const [user, includeDeclinedAt] = await Promise.all([
+        getCurrentUser(),
+        canStoreTeamApplicationDeclinedAt(),
+      ]);
       const team = await prisma.team.findUnique({
         where: { slug },
         include: {
+          applications: {
+            where: {
+              user: {
+                steamId: user?.steamId ?? "__signed_out__",
+              },
+            },
+            select: includeDeclinedAt
+              ? { status: true, createdAt: true, declinedAt: true }
+              : { status: true, createdAt: true },
+            take: 1,
+          },
           memberships: {
             include: {
               user: true,
@@ -313,7 +423,7 @@ export async function getTeamProfile(slug: string): Promise<TeamProfile | null> 
               team: true,
             },
             orderBy: { startsAt: "asc" },
-            where: { startsAt: { gte: new Date() } },
+            where: { endsAt: { gte: new Date() } },
             take: 6,
           },
         },
@@ -373,7 +483,7 @@ export async function getScheduleFeed(): Promise<ScheduleFeedEvent[]> {
           },
         },
         where: {
-          startsAt: { gte: new Date(Date.now() - 2 * 60 * 60 * 1000) },
+          endsAt: { gte: new Date() },
         },
         orderBy: { startsAt: "asc" },
         take: 12,

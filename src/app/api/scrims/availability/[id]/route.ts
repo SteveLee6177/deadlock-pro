@@ -3,13 +3,14 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 import { parseAbsoluteDateTime } from "@/lib/time-zone";
 
 const updateSchema = z.object({
   startTime: z.string().min(1),
   endTime: z.string().min(1),
-  region: z.string().min(2),
+  region: z.enum(REGION_OPTIONS),
   notes: z.string().optional(),
 });
 

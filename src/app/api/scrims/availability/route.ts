@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 import { parseAbsoluteDateTime } from "@/lib/time-zone";
 
@@ -10,7 +11,7 @@ const availabilitySchema = z.object({
   teamId: z.string().min(1),
   startTime: z.string().min(1),
   endTime: z.string().min(1),
-  region: z.string().min(2),
+  region: z.enum(REGION_OPTIONS),
   notes: z.string().optional(),
 });
 
@@ -23,6 +24,20 @@ async function hasConfirmedOverlap(teamId: string, startTime: Date, endTime: Dat
     where: {
       status: "CONFIRMED",
       OR: [{ teamAId: teamId }, { teamBId: teamId }],
+      startTime: { lt: endTime },
+      endTime: { gt: startTime },
+    },
+    select: { id: true },
+  });
+
+  return Boolean(overlap);
+}
+
+async function hasAvailabilityOverlap(teamId: string, startTime: Date, endTime: Date) {
+  const overlap = await prisma.scrimAvailabilityBlock.findFirst({
+    where: {
+      teamId,
+      status: { in: ["OPEN", "PENDING", "BOOKED"] },
       startTime: { lt: endTime },
       endTime: { gt: startTime },
     },
@@ -66,6 +81,10 @@ export async function POST(request: Request) {
 
   if (await hasConfirmedOverlap(parsed.data.teamId, startTime, endTime)) {
     return jsonError("Your team already has a confirmed scrim during that time.", 409);
+  }
+
+  if (await hasAvailabilityOverlap(parsed.data.teamId, startTime, endTime)) {
+    return jsonError("Your team already has a Looking For Scrim block during that time.", 409);
   }
 
   const block = await prisma.scrimAvailabilityBlock.create({

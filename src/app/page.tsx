@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { addDays, startOfWeek } from "date-fns";
+import { addDays, startOfDay } from "date-fns";
 import { ArrowRight, CalendarClock, Search, ShieldCheck, Swords, Users } from "lucide-react";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { HourlyScrimCalendar } from "@/components/scrims/hourly-scrim-calendar";
@@ -14,7 +14,7 @@ const previewTeam: ScrimTeamOption = {
   tag: "SGN",
   role: "OWNER",
   canManageScrims: false,
-  region: "NA East",
+  region: "NA",
   primaryRank: "Eternus 6",
 };
 
@@ -41,7 +41,7 @@ function makePreviewEvent(
 }
 
 function getPreviewCalendarEvents(): ScrimCalendarEvent[] {
-  const weekStart = startOfWeek(new Date());
+  const weekStart = startOfDay(new Date());
 
   return [
     makePreviewEvent(weekStart, 1, 19, 1, {
@@ -185,7 +185,7 @@ export default async function HomePage() {
               icon: Users,
               title: "Find teams with intent",
               detail:
-                "Recruiting teams list roles, rank expectations, and tryout details so players can apply where they actually fit.",
+                "Recruiting teams list roles, rank expectations, and roster needs so players can apply where they actually fit.",
             },
           ].map((item) => (
             <div key={item.title} className="surface rounded-lg p-6">

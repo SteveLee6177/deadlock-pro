@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { TeamDirectoryExplorer } from "@/components/team-directory-explorer";
 import { TeamLeaveButton } from "@/components/team-leave-button";
+import { TeamApplicationActions } from "@/components/team-application-actions";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { ScheduleList } from "@/components/schedule-list";
 import { getCurrentUser } from "@/lib/auth";
@@ -34,8 +35,18 @@ type TeamsPageProps = {
   }>;
 };
 
+const APPLICATION_MANAGER_ROLES = new Set(["OWNER", "MANAGER"]);
+
 function asString(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function canManageApplications(role: string | undefined) {
+  return Boolean(role && APPLICATION_MANAGER_ROLES.has(role));
+}
+
+function roleLabel(role: string) {
+  return role === "TRIAL" ? "Applicant" : role;
 }
 
 function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
@@ -46,7 +57,8 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
         Manage {workspace.team.name}.
       </h1>
       <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-        Review trial requests, roster status, scrim blocks, and recruiting posture from one team view.
+        Review player applications, roster status, scrim blocks, and recruiting posture from one
+        team view.
       </p>
       <div className="mt-8 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
@@ -63,7 +75,15 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
   );
 }
 
-function OwnerRoster({ team }: { team: TeamProfile }) {
+function TeamRoster({
+  currentUserId,
+  showPlayerLeaveAction = false,
+  team,
+}: {
+  currentUserId?: string | null;
+  showPlayerLeaveAction?: boolean;
+  team: TeamProfile;
+}) {
   return (
     <section className="surface rounded-lg p-6">
       <div className="flex items-center gap-3">
@@ -79,13 +99,18 @@ function OwnerRoster({ team }: { team: TeamProfile }) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-medium text-white">{member.profileName}</p>
-                <p className="mt-1 text-sm text-muted">{member.role}</p>
+                <p className="mt-1 text-sm text-muted">{roleLabel(member.role)}</p>
               </div>
-              {member.deadlockRank ? (
-                <span className="rounded-full bg-success/15 px-3 py-1 text-xs text-success">
-                  {member.deadlockRank}
-                </span>
-              ) : null}
+              <div className="flex items-center gap-3">
+                {member.deadlockRank ? (
+                  <span className="rounded-full bg-success/15 px-3 py-1 text-xs text-success">
+                    {member.deadlockRank}
+                  </span>
+                ) : null}
+                {showPlayerLeaveAction && member.id === currentUserId ? (
+                  <TeamLeaveButton slug={team.slug} teamName={team.name} iconOnly />
+                ) : null}
+              </div>
             </div>
           </div>
         ))}
@@ -94,14 +119,20 @@ function OwnerRoster({ team }: { team: TeamProfile }) {
   );
 }
 
-function OwnerInvites({ applications }: { applications: TeamApplicationSummary[] }) {
+function OwnerInvites({
+  applications,
+  slug,
+}: {
+  applications: TeamApplicationSummary[];
+  slug: string;
+}) {
   return (
     <section className="surface rounded-lg p-6">
       <div className="flex items-center gap-3">
         <UserPlus className="h-5 w-5 text-accent-strong" />
         <div>
-          <p className="eyebrow">Trials</p>
-          <h2 className="mt-1 font-display text-3xl font-bold text-white">Requests to review</h2>
+          <p className="eyebrow">Applications</p>
+          <h2 className="mt-1 font-display text-3xl font-bold text-white">Players to review</h2>
         </div>
       </div>
       <div className="mt-6 space-y-3">
@@ -122,12 +153,13 @@ function OwnerInvites({ applications }: { applications: TeamApplicationSummary[]
               {application.message ? (
                 <p className="mt-3 text-sm leading-6 text-slate-300">{application.message}</p>
               ) : null}
+              <TeamApplicationActions applicationId={application.id} slug={slug} />
             </div>
           ))
         ) : (
           <p className="rounded-lg border border-line bg-white/5 p-4 text-sm text-muted">
-            No pending trial requests yet. Keep role standards visible so qualified players know
-            where to request a block.
+            No pending applications yet. Keep role standards visible so qualified players know
+            where to apply.
           </p>
         )}
       </div>
@@ -181,9 +213,11 @@ function OwnerScrimRequests({ scrims }: { scrims: OpenScrim[] }) {
 
 function OwnerSettings({
   currentUserId,
+  role,
   team,
 }: {
   currentUserId: string | null;
+  role: string;
   team: TeamProfile;
 }) {
   return (
@@ -192,12 +226,12 @@ function OwnerSettings({
         <Cog className="h-5 w-5 text-accent-strong" />
         <div>
           <p className="eyebrow">Settings</p>
-          <h2 className="mt-1 font-display text-3xl font-bold text-white">Trial posture</h2>
+          <h2 className="mt-1 font-display text-3xl font-bold text-white">Recruiting posture</h2>
         </div>
       </div>
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
         <div className="rounded-lg border border-line bg-white/5 p-4">
-          <p className="text-sm text-muted">Trials</p>
+          <p className="text-sm text-muted">Applications</p>
           <p className="mt-2 font-medium text-white">{team.recruiting ? "Open" : "Closed"}</p>
         </div>
         <div className="rounded-lg border border-line bg-white/5 p-4">
@@ -209,7 +243,7 @@ function OwnerSettings({
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <Link
-          href={`/teams/${team.slug}`}
+          href={`/teams/${team.slug}?from=my-team`}
           className="inline-flex items-center gap-2 text-sm font-medium text-accent-strong transition hover:text-white"
         >
           View public team profile
@@ -225,15 +259,19 @@ function OwnerSettings({
       </div>
       <div className="mt-6 border-t border-line pt-6">
         <p className="eyebrow">Team Control</p>
-        <h3 className="mt-2 font-display text-2xl font-bold text-white">Leave or disband</h3>
+        <h3 className="mt-2 font-display text-2xl font-bold text-white">
+          {role === "OWNER" ? "Leave or disband" : "Leave team"}
+        </h3>
         <p className="mt-3 text-sm leading-6 text-muted">
-          Transfer ownership before leaving, or permanently remove the team.
+          {role === "OWNER"
+            ? "Transfer ownership before leaving, or permanently remove the team."
+            : "Leaving removes your manager access and roster membership."}
         </p>
         <div className="mt-5">
           <TeamLeaveButton
             slug={team.slug}
             teamName={team.name}
-            role="OWNER"
+            role={role}
             members={team.members}
             currentUserId={currentUserId}
           />
@@ -254,20 +292,22 @@ function OwnerDashboard({
     <>
       <DashboardHero workspace={workspace} />
       <div className="grid gap-6 xl:grid-cols-2">
-        <OwnerRoster team={workspace.team} />
-        <OwnerInvites applications={workspace.applications} />
+        <TeamRoster team={workspace.team} />
+        <OwnerInvites applications={workspace.applications} slug={workspace.team.slug} />
         <OwnerScrimRequests scrims={workspace.scrimRequests} />
-        <OwnerSettings currentUserId={currentUserId} team={workspace.team} />
+        <OwnerSettings currentUserId={currentUserId} role={workspace.userRole} team={workspace.team} />
       </div>
     </>
   );
 }
 
 function MemberDashboard({
+  currentUserId,
   schedule,
   team,
   role,
 }: {
+  currentUserId: string | null;
   schedule: ScheduleFeedEvent[];
   team: TeamProfile;
   role: string;
@@ -284,7 +324,7 @@ function MemberDashboard({
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">{team.description}</p>
         <div className="mt-8 flex flex-wrap gap-3 text-sm">
           <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-            {role}
+            {roleLabel(role)}
           </span>
           <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
             {team.memberCount} members
@@ -310,15 +350,12 @@ function MemberDashboard({
           )}
         </div>
 
-        <div className="surface rounded-lg p-6">
-          <p className="eyebrow">Membership</p>
-          <h2 className="mt-2 font-display text-3xl font-bold text-white">Team status</h2>
-          <p className="mt-4 text-sm leading-6 text-slate-300">
-            Leaving removes you from the roster and returns the Teams tab to trial discovery mode.
-          </p>
-          <div className="mt-6">
-            <TeamLeaveButton slug={team.slug} />
-          </div>
+        <div className="space-y-8">
+          <TeamRoster
+            currentUserId={currentUserId}
+            showPlayerLeaveAction
+            team={team}
+          />
         </div>
       </section>
     </>
@@ -334,9 +371,9 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
     getTeamsDirectory(),
     getCurrentUserTeamWorkspace(teamSlug),
   ]);
-  const isOwner = workspace?.userRole === "OWNER";
+  const canManageTeamApplications = canManageApplications(workspace?.userRole);
   const showWorkspace = Boolean(workspace && viewMode !== "browse");
-  const ownTeamHref = workspace?.userRole === "OWNER" ? `/teams?team=${workspace.team.slug}` : "/teams";
+  const ownTeamHref = workspace ? `/teams?team=${workspace.team.slug}` : "/teams";
 
   return (
     <div className="min-h-screen">
@@ -344,10 +381,11 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
         {showWorkspace && workspace ? (
-          isOwner ? (
+          canManageTeamApplications ? (
             <OwnerDashboard currentUserId={user?.id ?? null} workspace={workspace} />
           ) : (
             <MemberDashboard
+              currentUserId={user?.id ?? null}
               schedule={workspace.team.upcomingSchedule}
               team={workspace.team}
               role={workspace.userRole}
@@ -360,11 +398,11 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
                 <div>
                   <p className="eyebrow">Teams</p>
                   <h1 className="mt-4 max-w-3xl font-display text-5xl font-bold tracking-tight text-white">
-                    Find a team to try out for.
+                    Find a team to join.
                   </h1>
                   <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-                    Browse recruiting teams first, filter by role, and request a tryout when a
-                    roster matches your rank, region, and schedule.
+                    Browse recruiting teams first, filter by role, and apply when a roster matches
+                    your rank, region, and schedule.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-3">
@@ -386,7 +424,11 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
               </div>
             </section>
 
-            <TeamDirectoryExplorer teams={teams} />
+            <TeamDirectoryExplorer
+              teams={teams}
+              canApply={!workspace}
+              canViewProfiles={!workspace}
+            />
           </>
         )}
       </main>

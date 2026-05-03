@@ -34,8 +34,7 @@ export default async function CreateTeamPage() {
             </div>
           </div>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
-            Set the basics players need before they request a tryout: region, rank target, open
-            roles, practice focus, and expectations.
+            Set the roster basics, then choose whether this team is actively recruiting on-site or already assembled.
           </p>
         </section>
 

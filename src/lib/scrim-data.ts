@@ -4,6 +4,7 @@ import { getCurrentUserMemberships } from "@/lib/db-user";
 import { canUseDatabase } from "@/lib/database";
 import { demoScrims } from "@/lib/demo-data";
 import { prisma } from "@/lib/prisma";
+import { normalizeRegion } from "@/lib/regions";
 import { isScrimManagerRole } from "@/lib/scrim-permissions";
 import type {
   ScrimAvailabilitySummary,
@@ -45,7 +46,7 @@ function mapAvailability(block: {
     teamSlug: block.team.slug,
     teamName: block.team.name,
     teamTag: block.team.tag,
-    region: block.region,
+    region: normalizeRegion(block.region),
     rank: block.team.primaryRank,
     startTime: block.startTime.toISOString(),
     endTime: block.endTime.toISOString(),
@@ -85,12 +86,12 @@ function mapRequest(request: {
     requestingTeamId: request.requestingTeamId,
     requestingTeamName: request.requestingTeam.name,
     requestingTeamSlug: request.requestingTeam.slug,
-    requestingTeamRegion: request.requestingTeam.region,
+    requestingTeamRegion: normalizeRegion(request.requestingTeam.region),
     requestingTeamRank: request.requestingTeam.primaryRank,
     receivingTeamId: request.receivingTeamId,
     receivingTeamName: request.receivingTeam.name,
     receivingTeamSlug: request.receivingTeam.slug,
-    receivingTeamRegion: request.receivingTeam.region,
+    receivingTeamRegion: normalizeRegion(request.receivingTeam.region),
     receivingTeamRank: request.receivingTeam.primaryRank,
     startTime: request.availabilityBlock.startTime.toISOString(),
     endTime: request.availabilityBlock.endTime.toISOString(),
@@ -124,6 +125,30 @@ function mapScrim(scrim: {
   };
 }
 
+function availabilityOverlapsScrim(
+  block: ScrimAvailabilitySummary,
+  scrims: ScrimMatchSummary[],
+) {
+  const blockStart = new Date(block.startTime);
+  const blockEnd = new Date(block.endTime);
+
+  return scrims.some((scrim) => {
+    const scrimStart = new Date(scrim.startTime);
+    const scrimEnd = new Date(scrim.endTime);
+
+    return scrimStart < blockEnd && scrimEnd > blockStart;
+  });
+}
+
+function filterVisibleAvailability(
+  blocks: ScrimAvailabilitySummary[],
+  scrims: ScrimMatchSummary[],
+) {
+  return blocks.filter(
+    (block) => block.status !== "BOOKED" && !availabilityOverlapsScrim(block, scrims),
+  );
+}
+
 function demoOpenBlocks(): ScrimAvailabilitySummary[] {
   return demoScrims.map((scrim) => {
     const startTime = new Date(scrim.startsAt);
@@ -135,7 +160,7 @@ function demoOpenBlocks(): ScrimAvailabilitySummary[] {
       teamSlug: scrim.requesterTeamName.toLowerCase().replace(/\s+/g, "-"),
       teamName: scrim.requesterTeamName,
       teamTag: scrim.requesterTag,
-      region: scrim.region,
+      region: normalizeRegion(scrim.region),
       rank: scrim.wantedRank,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
@@ -180,6 +205,7 @@ export async function getCurrentScrimTeams(): Promise<ScrimTeamOption[]> {
     if (team) {
       options.push({
         ...team,
+        region: normalizeRegion(team.region),
         role: membership.role,
         canManageScrims: isScrimManagerRole(membership.role),
       });
@@ -264,6 +290,65 @@ export async function getOpenAvailabilityBlocks(
     .map(mapAvailability);
 }
 
+export async function removeDeclinedMatchupBlocks(
+  blocks: ScrimAvailabilitySummary[],
+  teamIds: string[],
+) {
+  noStore();
+
+  if (blocks.length === 0 || teamIds.length === 0 || !(await canUseDatabase())) {
+    return blocks;
+  }
+
+  const ownTeamIds = new Set(teamIds);
+  const otherTeamIds = [...new Set(blocks.map((block) => block.teamId))];
+  const declinedRequests = await prisma.scrimBookingRequest.findMany({
+    where: {
+      status: "DECLINED",
+      OR: [
+        {
+          requestingTeamId: { in: teamIds },
+          receivingTeamId: { in: otherTeamIds },
+        },
+        {
+          requestingTeamId: { in: otherTeamIds },
+          receivingTeamId: { in: teamIds },
+        },
+      ],
+    },
+    include: {
+      availabilityBlock: {
+        select: {
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+    take: 200,
+  });
+
+  if (declinedRequests.length === 0) {
+    return blocks;
+  }
+
+  return blocks.filter((block) => {
+    const blockStart = new Date(block.startTime);
+    const blockEnd = new Date(block.endTime);
+
+    return !declinedRequests.some((request) => {
+      const requestStart = request.availabilityBlock.startTime;
+      const requestEnd = request.availabilityBlock.endTime;
+      const teamsMatch =
+        (ownTeamIds.has(request.requestingTeamId) && request.receivingTeamId === block.teamId) ||
+        (ownTeamIds.has(request.receivingTeamId) && request.requestingTeamId === block.teamId);
+      const timesOverlap = requestStart < blockEnd && requestEnd > blockStart;
+
+      return teamsMatch && timesOverlap;
+    });
+  });
+}
+
 function toMinutes(time: string) {
   const [hours = "0", minutes = "0"] = time.split(":");
   return Number(hours) * 60 + Number(minutes);
@@ -321,6 +406,7 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
       prisma.scrimBookingRequest.findMany({
         where: {
           receivingTeamId: selectedTeam.id,
+          status: "PENDING",
         },
         include: requestIncludes,
         orderBy: [{ status: "asc" }, { createdAt: "desc" }],
@@ -337,7 +423,8 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
       prisma.scrim.findMany({
         where: {
           OR: [{ teamAId: selectedTeam.id }, { teamBId: selectedTeam.id }],
-          startTime: { gte: now, lte: horizon },
+          endTime: { gte: now },
+          startTime: { lte: horizon },
           status: "CONFIRMED",
         },
         include: {
@@ -354,18 +441,19 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
   const mappedIncoming = incomingRequests.map(mapRequest);
   const mappedOutgoing = outgoingRequests.map(mapRequest);
   const mappedScrims = scrims.map(mapScrim);
+  const visibleAvailability = filterVisibleAvailability(mappedAvailability, mappedScrims);
 
   return {
     team: selectedTeam,
     teams,
     upcomingScrims: mappedScrims,
-    availabilityBlocks: mappedAvailability,
+    availabilityBlocks: visibleAvailability,
     openBlocks,
     incomingRequests: mappedIncoming,
     outgoingRequests: mappedOutgoing,
     calendarEvents: buildCalendarEvents(
       selectedTeam.id,
-      mappedAvailability,
+      visibleAvailability,
       mappedIncoming,
       mappedOutgoing,
       mappedScrims,
@@ -401,39 +489,21 @@ const requestIncludes = {
 function buildCalendarEvents(
   teamId: string,
   availabilityBlocks: ScrimAvailabilitySummary[],
-  incomingRequests: ScrimRequestSummary[],
-  outgoingRequests: ScrimRequestSummary[],
+  _incomingRequests: ScrimRequestSummary[],
+  _outgoingRequests: ScrimRequestSummary[],
   scrims: ScrimMatchSummary[],
 ): ScrimCalendarEvent[] {
-  const requestEvents = [...incomingRequests, ...outgoingRequests]
-    .filter((request) => request.status === "PENDING")
-    .map((request) => ({
-      id: request.id,
-      kind: "request" as const,
-      title:
-        request.receivingTeamId === teamId
-          ? `Pending vs ${request.requestingTeamName}`
-          : `Requested ${request.receivingTeamName}`,
-      startTime: request.startTime,
-      endTime: request.endTime,
-      status: request.status,
-      notes: request.message,
-      opponentName:
-        request.receivingTeamId === teamId
-          ? request.requestingTeamName
-          : request.receivingTeamName,
+  const availabilityEvents = availabilityBlocks
+    .map((block) => ({
+      id: block.id,
+      kind: "availability" as const,
+      title: "Open availability",
+      startTime: block.startTime,
+      endTime: block.endTime,
+      status: block.status,
+      notes: block.notes,
+      opponentName: null,
     }));
-
-  const availabilityEvents = availabilityBlocks.map((block) => ({
-    id: block.id,
-    kind: "availability" as const,
-    title: "Open availability",
-    startTime: block.startTime,
-    endTime: block.endTime,
-    status: block.status,
-    notes: block.notes,
-    opponentName: null,
-  }));
 
   const scrimEvents = scrims.map((scrim) => ({
     id: scrim.id,
@@ -446,7 +516,7 @@ function buildCalendarEvents(
     opponentName: scrim.teamAId === teamId ? scrim.teamBName : scrim.teamAName,
   }));
 
-  return [...availabilityEvents, ...requestEvents, ...scrimEvents].sort(
+  return [...availabilityEvents, ...scrimEvents].sort(
     (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime(),
   );
 }
@@ -497,7 +567,7 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
     }),
     isMember
       ? prisma.scrimBookingRequest.findMany({
-          where: { receivingTeamId: team.id },
+          where: { receivingTeamId: team.id, status: "PENDING" },
           include: requestIncludes,
           orderBy: [{ status: "asc" }, { createdAt: "desc" }],
           take: 12,
@@ -515,7 +585,7 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
       ? prisma.scrim.findMany({
           where: {
             OR: [{ teamAId: team.id }, { teamBId: team.id }],
-            startTime: { gte: new Date() },
+            endTime: { gte: new Date() },
             status: "CONFIRMED",
           },
           include: {
@@ -532,13 +602,14 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
   const mappedIncoming = incomingRequests.map(mapRequest);
   const mappedOutgoing = outgoingRequests.map(mapRequest);
   const mappedScrims = scrims.map(mapScrim);
+  const visibleAvailability = filterVisibleAvailability(mappedBlocks, mappedScrims);
 
   const teamSummary: TeamSummary = {
     id: team.id,
     slug: team.slug,
     name: team.name,
     tag: team.tag,
-    region: team.region,
+    region: normalizeRegion(team.region),
     focus: team.focus,
     primaryRank: team.primaryRank,
     description: team.description,
@@ -553,13 +624,13 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
     isMember,
     canManage,
     role: membership?.role ?? null,
-    availabilityBlocks: mappedBlocks,
+    availabilityBlocks: visibleAvailability,
     incomingRequests: mappedIncoming,
     outgoingRequests: mappedOutgoing,
     upcomingScrims: mappedScrims,
     calendarEvents: buildCalendarEvents(
       team.id,
-      mappedBlocks,
+      visibleAvailability,
       mappedIncoming,
       mappedOutgoing,
       mappedScrims,

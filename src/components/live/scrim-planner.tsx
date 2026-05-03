@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { REGION_OPTIONS } from "@/lib/regions";
 import type { UserTeamOption } from "@/lib/types";
 
 type FormState = {
@@ -26,7 +27,7 @@ export function ScrimPlanner({
   const [scrimForm, setScrimForm] = useState({
     requesterTeamId: teams[0]?.id ?? "",
     startsAt: "",
-    region: "NA East",
+    region: "NA",
     format: "Bo3",
     wantedRank: "Eternus 5+",
     notes: "",
@@ -87,7 +88,7 @@ export function ScrimPlanner({
           >
             {teams.map((team) => (
               <option key={team.id} value={team.id} className="bg-slate-900">
-                {team.name} ({team.tag})
+                {team.name}
               </option>
             ))}
           </select>
@@ -101,15 +102,21 @@ export function ScrimPlanner({
             disabled={disabled || isPending || teams.length === 0}
           />
           <div className="grid gap-4 md:grid-cols-3">
-            <input
+            <select
               value={scrimForm.region}
               onChange={(event) =>
                 setScrimForm((current) => ({ ...current, region: event.target.value }))
               }
-              placeholder="Region"
               className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
               disabled={disabled || isPending || teams.length === 0}
-            />
+              aria-label="Region"
+            >
+              {REGION_OPTIONS.map((region) => (
+                <option key={region} value={region} className="bg-slate-900">
+                  {region}
+                </option>
+              ))}
+            </select>
             <input
               value={scrimForm.format}
               onChange={(event) =>
@@ -204,7 +211,7 @@ export function ScrimPlanner({
           >
             {teams.map((team) => (
               <option key={team.id} value={team.id} className="bg-slate-900">
-                {team.name} ({team.tag})
+                {team.name}
               </option>
             ))}
           </select>

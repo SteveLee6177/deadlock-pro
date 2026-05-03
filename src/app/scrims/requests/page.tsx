@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MessageSquare, Search, Users } from "lucide-react";
+import { Search, Users } from "lucide-react";
 import { RequestActions } from "@/components/scrims/scrim-actions";
 import { ScrimNav } from "@/components/scrims/scrim-nav";
 import {
@@ -13,7 +13,9 @@ import { getScrimWorkspace } from "@/lib/scrim-data";
 
 export default async function ScrimRequestsPage() {
   const [user, workspace] = await Promise.all([getCurrentUser(), getScrimWorkspace()]);
-  const pendingCount = workspace.incomingRequests.filter((request) => request.status === "PENDING").length;
+  const currentCount = workspace.upcomingScrims.length;
+  const incomingCount = workspace.incomingRequests.length;
+  const sentCount = workspace.outgoingRequests.length;
   const canManage = Boolean(workspace.team?.canManageScrims);
 
   return (
@@ -21,12 +23,17 @@ export default async function ScrimRequestsPage() {
       <SiteHeader user={user} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
-        <ScrimNav active="requests" pendingCount={pendingCount} />
+        <ScrimNav
+          active="incoming"
+          currentCount={currentCount}
+          incomingCount={incomingCount}
+          sentCount={sentCount}
+        />
 
         {workspace.team ? (
           <>
             <section className="surface-strong rounded-lg p-8 md:p-10">
-              <p className="eyebrow">Requests</p>
+              <p className="eyebrow">Scrim Queues</p>
               <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
                 {canManage ? "Accept, decline, and track scrim requests." : "Scrim requests are read-only."}
               </h1>
@@ -39,8 +46,8 @@ export default async function ScrimRequestsPage() {
 
             {canManage ? (
               <section className="grid gap-6 xl:grid-cols-2">
-                <div className="surface rounded-lg p-6">
-                  <p className="eyebrow">Incoming Requests</p>
+                <div id="incoming" className="surface rounded-lg p-6">
+                  <p className="eyebrow">Incoming Scrims ({incomingCount})</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">
                     Review queue
                   </h2>
@@ -52,39 +59,22 @@ export default async function ScrimRequestsPage() {
                         direction="incoming"
                         actions={
                           request.status === "PENDING" ? (
-                            <>
-                              <RequestActions requestId={request.id} />
-                              <Link
-                                href={`/teams/${request.requestingTeamSlug}`}
-                                className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
-                              >
-                                <MessageSquare className="h-4 w-4" />
-                                Message Team
-                              </Link>
-                            </>
-                          ) : (
-                            <Link
-                              href={`/teams/${request.requestingTeamSlug}`}
-                              className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
-                            >
-                              <MessageSquare className="h-4 w-4" />
-                              Message Team
-                            </Link>
-                          )
+                            <RequestActions requestId={request.id} />
+                          ) : undefined
                         }
                       />
                     ))}
                     {workspace.incomingRequests.length === 0 ? (
                       <EmptyScrimState
-                        title="No incoming requests"
+                        title="No incoming scrims"
                         detail="Requests from other teams will appear here as soon as they ask for one of your blocks."
                       />
                     ) : null}
                   </div>
                 </div>
 
-                <div className="surface rounded-lg p-6">
-                  <p className="eyebrow">Outgoing Requests</p>
+                <div id="sent" className="surface rounded-lg p-6">
+                  <p className="eyebrow">Sent Scrims ({sentCount})</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">Sent requests</h2>
                   <div className="mt-6 space-y-4">
                     {workspace.outgoingRequests.map((request) => (
@@ -92,20 +82,11 @@ export default async function ScrimRequestsPage() {
                         key={request.id}
                         request={request}
                         direction="outgoing"
-                        actions={
-                          <Link
-                            href={`/teams/${request.receivingTeamSlug}`}
-                            className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
-                          >
-                            <MessageSquare className="h-4 w-4" />
-                            Message Team
-                          </Link>
-                        }
                       />
                     ))}
                     {workspace.outgoingRequests.length === 0 ? (
                       <EmptyScrimState
-                        title="No outgoing requests"
+                        title="No sent scrims"
                         detail="Browse public availability and send a request from a manager-controlled team."
                         href="/scrims/find"
                         action="Find scrims"
@@ -126,7 +107,7 @@ export default async function ScrimRequestsPage() {
                   </div>
                 </div>
                 <div className="surface rounded-lg p-6">
-                  <p className="eyebrow">Request Status</p>
+                  <p className="eyebrow">Incoming Scrims ({incomingCount}) · Sent Scrims ({sentCount})</p>
                   <h2 className="mt-2 font-display text-3xl font-bold text-white">Read-only queue</h2>
                   <div className="mt-6 space-y-4">
                     {[...workspace.incomingRequests, ...workspace.outgoingRequests].map((request) => (
@@ -149,7 +130,7 @@ export default async function ScrimRequestsPage() {
           </>
         ) : (
           <section className="surface-strong rounded-lg p-8 md:p-10">
-            <p className="eyebrow">Requests</p>
+            <p className="eyebrow">Scrim Queues</p>
             <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
               Join or create a team to request scrims.
             </h1>

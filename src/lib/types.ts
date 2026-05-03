@@ -19,6 +19,8 @@ export type TeamSummary = {
   openRoles: string[];
   memberCount: number;
   availability: string;
+  currentUserApplicationStatus?: string | null;
+  currentUserCanApply?: boolean;
 };
 
 export type UserTeamOption = {
@@ -48,11 +50,27 @@ export type TeamProfile = TeamSummary & {
 
 export type TeamApplicationSummary = {
   id: string;
+  userId: string;
   profileName: string;
   deadlockRank: string | null;
   message: string | null;
   status: string;
   createdAt: string;
+};
+
+export type PlayerApplicationSummary = {
+  id: string;
+  status: string;
+  message: string | null;
+  createdAt: string;
+  team: {
+    id: string;
+    slug: string;
+    name: string;
+    region: string;
+    primaryRank: string;
+    recruiting: boolean;
+  };
 };
 
 export type UserTeamWorkspace = {
@@ -119,6 +137,39 @@ export type ScrimMatchSummary = {
   endTime: string;
   status: string;
   notes: string | null;
+};
+
+export type ScrimChatEntity =
+  | {
+      kind: "request";
+      id: string;
+    }
+  | {
+      kind: "scrim";
+      id: string;
+    };
+
+export type ScrimChatMessage = {
+  id: string;
+  senderUserId: string;
+  senderName: string;
+  senderTeamId: string;
+  senderTeamName: string;
+  body: string;
+  createdAt: string;
+};
+
+export type ScrimConversationSummary = {
+  id: string;
+  title: string;
+  subtitle: string;
+  teams: Array<{
+    id: string;
+    name: string;
+    tag: string;
+  }>;
+  manageableTeamIds: string[];
+  messages: ScrimChatMessage[];
 };
 
 export type ScrimCalendarEvent = {

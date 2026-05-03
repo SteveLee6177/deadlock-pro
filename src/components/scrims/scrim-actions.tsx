@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CalendarPlus, Check, Pencil, Send, Trash2, X } from "lucide-react";
-import { LocalScheduleRange } from "@/components/local-schedule-range";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { toLocalInputValue, toUtcIsoFromLocalInput } from "@/lib/time-zone";
 import type { ScrimAvailabilitySummary, ScrimMatchSummary, ScrimTeamOption } from "@/lib/types";
 
@@ -28,7 +28,7 @@ export function ScrimAvailabilityForm({
     teamId: manageableTeams[0]?.id ?? "",
     startTime: "",
     endTime: "",
-    region: manageableTeams[0]?.region ?? "NA East",
+    region: manageableTeams[0]?.region ?? "NA",
     notes: "",
   });
 
@@ -90,7 +90,7 @@ export function ScrimAvailabilityForm({
         >
           {manageableTeams.map((team) => (
             <option key={team.id} value={team.id} className="bg-slate-950">
-              {team.name} ({team.tag})
+              {team.name}
             </option>
           ))}
         </select>
@@ -110,13 +110,19 @@ export function ScrimAvailabilityForm({
             className="h-11 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
           />
         </div>
-        <input
+        <select
           value={form.region}
           onChange={(event) => setForm((current) => ({ ...current, region: event.target.value }))}
           disabled={isPending || manageableTeams.length === 0}
-          placeholder="Region"
+          aria-label="Region"
           className="h-11 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
-        />
+        >
+          {REGION_OPTIONS.map((region) => (
+            <option key={region} value={region} className="bg-slate-950">
+              {region}
+            </option>
+          ))}
+        </select>
         <textarea
           value={form.notes}
           onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
@@ -149,8 +155,6 @@ export function RequestScrimButton({
   teams: ScrimTeamOption[];
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const eligibleTeams = useMemo(
@@ -158,6 +162,30 @@ export function RequestScrimButton({
     [block.teamId, teams],
   );
   const [requestingTeamId, setRequestingTeamId] = useState(eligibleTeams[0]?.id ?? "");
+
+  function requestScrim() {
+    if (!requestingTeamId) {
+      setFeedback("Choose a team that can request this scrim.");
+      return;
+    }
+
+    startTransition(async () => {
+      const response = await fetch("/api/scrims/requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          availabilityBlockId: block.id,
+          requestingTeamId,
+        }),
+      });
+
+      setFeedback(await readMessage(response, "Scrim request submitted."));
+
+      if (response.ok) {
+        router.refresh();
+      }
+    });
+  }
 
   if (teams.length === 0) {
     return (
@@ -188,98 +216,29 @@ export function RequestScrimButton({
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={requestScrim}
+        disabled={isPending || !requestingTeamId}
         className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
       >
         <Send className="h-4 w-4" />
-        Request Scrim
+        {isPending ? "Requesting..." : "Request Scrim"}
       </button>
-      {feedback && !open ? <p className="text-sm text-muted">{feedback}</p> : null}
-
-      {open ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 px-4">
-          <form
-            className="w-full max-w-lg rounded-lg border border-line bg-[#0a1724] p-6 shadow-2xl"
-            onSubmit={(event) => {
-              event.preventDefault();
-
-              startTransition(async () => {
-                const response = await fetch("/api/scrims/requests", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    availabilityBlockId: block.id,
-                    requestingTeamId,
-                    message,
-                  }),
-                });
-
-                setFeedback(await readMessage(response, "Scrim request submitted."));
-
-                if (response.ok) {
-                  setOpen(false);
-                  setMessage("");
-                  router.refresh();
-                }
-              });
-            }}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="eyebrow">Request Scrim</p>
-                <h2 className="mt-2 font-display text-3xl font-bold text-white">
-                  {block.teamName}
-                </h2>
-                <p className="mt-2 text-sm text-muted">
-                  <LocalScheduleRange start={block.startTime} end={block.endTime} />
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-muted transition hover:text-white"
-                aria-label="Close request modal"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-
-            <div className="mt-6 grid gap-3">
-              <select
-                value={requestingTeamId}
-                onChange={(event) => setRequestingTeamId(event.target.value)}
-                disabled={isPending}
-                className="h-11 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
-              >
-                {eligibleTeams.map((team) => (
-                  <option key={team.id} value={team.id} className="bg-slate-950">
-                    {team.name} ({team.tag})
-                  </option>
-                ))}
-              </select>
-              <textarea
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                disabled={isPending}
-                placeholder="Optional notes or message"
-                className="min-h-28 rounded-[14px] border border-line bg-white/5 px-3 py-3 text-sm text-white outline-none focus:border-accent"
-              />
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:opacity-50"
-              >
-                <Send className="h-4 w-4" />
-                {isPending ? "Sending..." : "Confirm request"}
-              </button>
-              {feedback ? <p className="text-sm text-muted">{feedback}</p> : null}
-            </div>
-          </form>
-        </div>
+      {eligibleTeams.length > 1 ? (
+        <select
+          value={requestingTeamId}
+          onChange={(event) => setRequestingTeamId(event.target.value)}
+          disabled={isPending}
+          aria-label="Requesting team"
+          className="h-10 rounded-full border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
+        >
+          {eligibleTeams.map((team) => (
+            <option key={team.id} value={team.id} className="bg-slate-950">
+              {team.name}
+            </option>
+          ))}
+        </select>
       ) : null}
+      {feedback ? <p className="text-sm text-muted">{feedback}</p> : null}
     </>
   );
 }
@@ -430,11 +389,18 @@ export function AvailabilityBlockManager({
           className="h-10 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
         />
       </div>
-      <input
+      <select
         value={form.region}
         onChange={(event) => setForm((current) => ({ ...current, region: event.target.value }))}
+        aria-label="Region"
         className="h-10 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
-      />
+      >
+        {REGION_OPTIONS.map((region) => (
+          <option key={region} value={region} className="bg-slate-950">
+            {region}
+          </option>
+        ))}
+      </select>
       <textarea
         value={form.notes}
         onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}

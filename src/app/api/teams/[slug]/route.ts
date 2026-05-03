@@ -2,12 +2,13 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getOrCreateCurrentDbUser } from "@/lib/db-user";
+import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
 import { isScrimManagerRole } from "@/lib/scrim-permissions";
 import { prisma } from "@/lib/prisma";
 
 const updateRecruitingSchema = z.object({
   recruiting: z.boolean(),
-  openRoles: z.array(z.string().trim().min(1)).max(20),
+  openRoles: z.array(z.enum(RECRUITING_ROLE_OPTIONS)).max(RECRUITING_ROLE_OPTIONS.length),
   focus: z.string().trim().min(2, "Team focus must be at least 2 characters."),
   description: z.string().trim().min(10, "Description must be at least 10 characters."),
 });
@@ -118,7 +119,10 @@ export async function DELETE(
     return NextResponse.json({ message: "Only the team owner can disband this team." }, { status: 403 });
   }
 
-  await prisma.team.delete({ where: { id: team.id } });
+  await prisma.$transaction([
+    prisma.teamApplication.deleteMany({ where: { teamId: team.id } }),
+    prisma.team.delete({ where: { id: team.id } }),
+  ]);
 
   return NextResponse.json({ message: "Team disbanded." });
 }

@@ -1,38 +1,71 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GuestAccessCard } from "@/components/access/guest-access-card";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { ScheduleList } from "@/components/schedule-list";
 import { TeamJoinForm } from "@/components/team-join-form";
 import { getCurrentUser } from "@/lib/auth";
+import { getCurrentUserMemberships } from "@/lib/db-user";
 import { getTeamProfile } from "@/lib/platform-data";
+import type { TeamProfile } from "@/lib/types";
 
-export default async function TeamPage({
-  params,
-}: {
+type TeamPageProps = {
   params: Promise<{ slug: string }>;
-}) {
+  searchParams?: Promise<{
+    from?: string | string[];
+    source?: string | string[];
+  }>;
+};
+
+function asString(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function canApplyToTeam(team: TeamProfile) {
+  return team.recruiting && team.currentUserCanApply !== false;
+}
+
+export default async function TeamPage({ params, searchParams }: TeamPageProps) {
   const { slug } = await params;
-  const [user, team] = await Promise.all([getCurrentUser(), getTeamProfile(slug)]);
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const profileSource =
+    asString(resolvedSearchParams.from) ?? asString(resolvedSearchParams.source);
+  const [user, team, membershipData] = await Promise.all([
+    getCurrentUser(),
+    getTeamProfile(slug),
+    getCurrentUserMemberships(),
+  ]);
 
   if (!team) {
     notFound();
   }
+
+  const memberships = membershipData?.memberships ?? [];
+  const ownTeamMembership = memberships.find((membership) => membership.team.slug === slug);
+  const canViewRosteredTeamProfile = Boolean(
+    ownTeamMembership && profileSource === "my-team",
+  );
+
+  if (memberships.length > 0 && !canViewRosteredTeamProfile) {
+    redirect(memberships[0]?.team.slug ? `/teams?team=${memberships[0].team.slug}` : "/teams");
+  }
+
+  const backHref = canViewRosteredTeamProfile ? `/teams?team=${team.slug}` : "/teams";
+  const backLabel = canViewRosteredTeamProfile ? "Back to my team" : "Back to team directory";
 
   return (
     <div className="min-h-screen">
       <SiteHeader user={user} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
-        <Link href="/teams" className="inline-flex items-center gap-2 text-sm text-accent-strong">
+        <Link href={backHref} className="inline-flex items-center gap-2 text-sm text-accent-strong">
           <ArrowLeft className="h-4 w-4" />
-          Back to team directory
+          {backLabel}
         </Link>
 
         <section className="grid gap-8 xl:grid-cols-[1fr_0.85fr]">
           <div className="surface-strong rounded-lg p-8 md:p-10">
-            <p className="eyebrow">{team.tag}</p>
             <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
               {team.name}
             </h1>
@@ -47,7 +80,9 @@ export default async function TeamPage({
                 {team.availability}
               </span>
             </div>
-            <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{team.description}</p>
+            {team.description ? (
+              <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{team.description}</p>
+            ) : null}
             <p className="mt-4 max-w-3xl text-sm leading-7 text-muted">{team.focus}</p>
 
             <div className="mt-8 flex flex-wrap gap-2">
@@ -68,18 +103,24 @@ export default async function TeamPage({
             </div>
           </div>
 
-          {user ? (
+          {user && canApplyToTeam(team) ? (
             <TeamJoinForm slug={team.slug} disabled={false} />
           ) : (
             <GuestAccessCard
               eyebrow="View Only"
-              title="Trial requests unlock after Steam sign-in"
-              description="Roster standards stay visible for guests, but requesting a tryout block requires a signed-in Steam identity."
+              title={user ? "Roster access only" : "Applications unlock after Steam sign-in"}
+              description={
+                user
+                  ? "This team's roster remains visible, but applications are no longer available for your profile."
+                  : "Roster standards stay visible for guests, but applying requires a signed-in Steam identity."
+              }
+              ctaHref={user ? "#roster" : "/sign-in"}
+              ctaLabel={user ? "View roster" : "Sign in with Steam"}
             />
           )}
         </section>
 
-        <section className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
+        <section id="roster" className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
           <div className="surface rounded-lg p-6">
             <p className="eyebrow">Roster</p>
             <h2 className="mt-2 font-display text-3xl font-bold text-white">Current members</h2>

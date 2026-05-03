@@ -5,7 +5,15 @@ import { useMemo, useState } from "react";
 import { TeamCard } from "@/components/team-card";
 import type { TeamSummary } from "@/lib/types";
 
-export function TeamDirectoryExplorer({ teams }: { teams: TeamSummary[] }) {
+export function TeamDirectoryExplorer({
+  canApply = true,
+  canViewProfiles = true,
+  teams,
+}: {
+  canApply?: boolean;
+  canViewProfiles?: boolean;
+  teams: TeamSummary[];
+}) {
   const [query, setQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState("All roles");
   const [selectedStatus, setSelectedStatus] = useState(() =>
@@ -28,7 +36,7 @@ export function TeamDirectoryExplorer({ teams }: { teams: TeamSummary[] }) {
     return teams.filter((team) => {
       const matchesQuery =
         normalizedQuery.length === 0 ||
-        [team.name, team.tag, team.region, team.focus, team.primaryRank, team.description]
+        [team.name, team.region, team.focus, team.primaryRank, team.description]
           .join(" ")
           .toLowerCase()
           .includes(normalizedQuery);
@@ -92,7 +100,7 @@ export function TeamDirectoryExplorer({ teams }: { teams: TeamSummary[] }) {
                 : "border-line bg-white/5 text-slate-100 hover:border-accent/50"
             }`}
           >
-            {role === "All roles" ? role : `Trialing ${role}`}
+            {role === "All roles" ? role : `Seeking ${role}`}
           </button>
         ))}
       </div>
@@ -100,7 +108,12 @@ export function TeamDirectoryExplorer({ teams }: { teams: TeamSummary[] }) {
       {visibleTeams.length > 0 ? (
         <div className="grid gap-6 xl:grid-cols-3">
           {visibleTeams.map((team) => (
-            <TeamCard key={team.id} team={team} showQuickApply />
+            <TeamCard
+              key={team.id}
+              canViewProfile={canViewProfiles}
+              team={team}
+              showQuickApply={canApply}
+            />
           ))}
         </div>
       ) : (

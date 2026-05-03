@@ -1,25 +1,39 @@
 import Link from "next/link";
-import { CalendarDays, ClipboardList, Search } from "lucide-react";
+import { CalendarDays, Inbox, Search, Send, Swords } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/scrims/calendar", label: "Calendar", icon: CalendarDays },
-  { href: "/scrims/find", label: "Find Scrims", icon: Search },
-  { href: "/scrims/requests", label: "Requests", icon: ClipboardList },
+  { href: "/scrims/calendar", label: "Calendar", icon: CalendarDays, key: "calendar" },
+  { href: "/scrims/find", label: "Find Scrims", icon: Search, key: "find" },
+  { href: "/scrims/current", label: "Current Scrims", icon: Swords, key: "current" },
+  { href: "/scrims/requests#incoming", label: "Incoming Scrims", icon: Inbox, key: "incoming" },
+  { href: "/scrims/requests#sent", label: "Sent Scrims", icon: Send, key: "sent" },
 ];
 
 export function ScrimNav({
   active,
-  pendingCount = 0,
+  currentCount = 0,
+  incomingCount = 0,
+  sentCount = 0,
 }: {
-  active: "calendar" | "find" | "requests";
-  pendingCount?: number;
+  active: "calendar" | "find" | "current" | "incoming" | "sent";
+  currentCount?: number;
+  incomingCount?: number;
+  sentCount?: number;
 }) {
   return (
     <nav className="flex flex-wrap gap-2">
       {links.map((link) => {
         const Icon = link.icon;
-        const isActive = link.href.endsWith(active);
+        const isActive = link.key === active;
+        const count =
+          link.key === "incoming"
+            ? incomingCount
+            : link.key === "sent"
+              ? sentCount
+              : link.key === "current"
+                ? currentCount
+                : null;
 
         return (
           <Link
@@ -34,9 +48,9 @@ export function ScrimNav({
           >
             <Icon className="h-4 w-4" />
             {link.label}
-            {link.label === "Requests" && pendingCount > 0 ? (
+            {count !== null ? (
               <span className="rounded-full bg-slate-950 px-2 py-0.5 text-xs text-white">
-                {pendingCount}
+                {count}
               </span>
             ) : null}
           </Link>

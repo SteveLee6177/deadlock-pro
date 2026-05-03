@@ -8,14 +8,21 @@ import { getScrimWorkspace } from "@/lib/scrim-data";
 
 export default async function ScrimsCalendarPage() {
   const [user, workspace] = await Promise.all([getCurrentUser(), getScrimWorkspace()]);
-  const pendingCount = workspace.incomingRequests.filter((request) => request.status === "PENDING").length;
+  const currentCount = workspace.upcomingScrims.length;
+  const incomingCount = workspace.incomingRequests.length;
+  const sentCount = workspace.outgoingRequests.length;
 
   return (
     <div className="min-h-screen">
       <SiteHeader user={user} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-        <ScrimNav active="calendar" pendingCount={pendingCount} />
+        <ScrimNav
+          active="calendar"
+          currentCount={currentCount}
+          incomingCount={incomingCount}
+          sentCount={sentCount}
+        />
 
         {workspace.team ? (
           <>
@@ -31,7 +38,7 @@ export default async function ScrimsCalendarPage() {
 
             <HourlyScrimCalendar
               events={workspace.calendarEvents}
-              requests={[...workspace.incomingRequests, ...workspace.outgoingRequests]}
+              requests={workspace.outgoingRequests}
               teams={workspace.teams}
               selectedTeam={workspace.team}
             />

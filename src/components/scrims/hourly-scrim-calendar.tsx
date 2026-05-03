@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { addDays, startOfWeek } from "date-fns";
+import { addDays, isSameDay, startOfDay } from "date-fns";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Send, X } from "lucide-react";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { cn } from "@/lib/utils";
 import {
   formatScheduleRangeInTimeZone,
@@ -83,6 +84,10 @@ function blocksNewAvailability(event: ScrimCalendarEvent) {
   );
 }
 
+function isElapsedSlot(slotEnd: Date, now: Date) {
+  return slotEnd <= now;
+}
+
 function eventStyle(event: ScrimCalendarEvent) {
   if (event.status === "CANCELLED") {
     return "border-rose-300/30 bg-rose-300/10";
@@ -97,6 +102,21 @@ function eventStyle(event: ScrimCalendarEvent) {
 
 function eventTitle(event: ScrimCalendarEvent) {
   return event.kind === "availability" ? "Looking For Scrim" : event.title;
+}
+
+function mergeCalendarEvents(
+  baseEvents: ScrimCalendarEvent[],
+  optimisticEvents: ScrimCalendarEvent[],
+) {
+  const eventsByKey = new Map(
+    baseEvents.map((event) => [`${event.kind}-${event.id}`, event]),
+  );
+
+  for (const event of optimisticEvents) {
+    eventsByKey.set(`${event.kind}-${event.id}`, event);
+  }
+
+  return [...eventsByKey.values()];
 }
 
 async function readMessage(response: Response, fallback: string) {
@@ -116,30 +136,46 @@ export function HourlyScrimCalendar({
   selectedTeam: ScrimTeamOption;
 }) {
   const [timeZone, setTimeZone] = useState<string | null>(null);
-  const [weekStart, setWeekStart] = useState<Date | null>(null);
+  const [today, setToday] = useState<Date | null>(null);
+  const [rangeStart, setRangeStart] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<SelectedSlot | null>(null);
   const [pendingCancel, setPendingCancel] = useState<ScrimCalendarEvent | null>(null);
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
+  const [optimisticEvents, setOptimisticEvents] = useState<ScrimCalendarEvent[]>([]);
   const [dayScrollState, setDayScrollState] = useState<Record<string, DayScrollState>>({});
   const [isActionPending, startActionTransition] = useTransition();
   const dayScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
   const hours = useMemo(() => Array.from({ length: 24 }, (_, hour) => hour), []);
   const days = useMemo(
-    () => (weekStart ? Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)) : []),
-    [weekStart],
+    () => (rangeStart ? Array.from({ length: 7 }, (_, index) => addDays(rangeStart, index)) : []),
+    [rangeStart],
+  );
+  const visibleEvents = useMemo(
+    () => mergeCalendarEvents(events, optimisticEvents),
+    [events, optimisticEvents],
   );
   const canManage = selectedTeam.canManageScrims;
 
   useEffect(() => {
+    let todayInterval: number | undefined;
+
     const frame = window.requestAnimationFrame(() => {
       const now = new Date();
 
       setTimeZone(getBrowserTimeZone());
-      setWeekStart(startOfWeek(now));
+      setToday(now);
+      setRangeStart(startOfDay(now));
+      todayInterval = window.setInterval(() => setToday(new Date()), 60_000);
     });
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frame);
+
+      if (todayInterval) {
+        window.clearInterval(todayInterval);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -200,6 +236,11 @@ export function HourlyScrimCalendar({
     const start = makeLocalSlot(day, hour);
     const end = makeLocalSlot(day, hour + 1);
 
+    if (isElapsedSlot(end, new Date())) {
+      setActionFeedback("That hour has already passed.");
+      return;
+    }
+
     setSelectedSlot({
       startTime: start.toISOString(),
       endTime: end.toISOString(),
@@ -239,7 +280,7 @@ export function HourlyScrimCalendar({
     });
   }
 
-  if (!timeZone || !weekStart) {
+  if (!timeZone || !rangeStart) {
     return (
       <section className="surface rounded-lg p-5">
         <div className="flex items-center gap-3">
@@ -263,7 +304,7 @@ export function HourlyScrimCalendar({
           <div>
             <p className="eyebrow">Local Calendar</p>
             <h2 className="mt-1 font-display text-2xl font-bold text-white">
-              {formatLocalMonthDay(weekStart, timeZone)} - {formatLocalMonthDay(addDays(weekStart, 6), timeZone)}
+              {formatLocalMonthDay(rangeStart, timeZone)} - {formatLocalMonthDay(addDays(rangeStart, 6), timeZone)}
             </h2>
             <p className="mt-1 text-xs text-muted">{timeZone} · {currentZoneName}</p>
           </div>
@@ -273,24 +314,29 @@ export function HourlyScrimCalendar({
           <div className="inline-flex rounded-full border border-line bg-white/5 p-1">
             <button
               type="button"
-              onClick={() => setWeekStart((current) => addDays(current ?? startOfWeek(new Date()), -7))}
+              onClick={() => setRangeStart((current) => addDays(current ?? startOfDay(new Date()), -7))}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-100 transition hover:bg-white/6"
-              aria-label="Previous week"
+              aria-label="Previous 7-day range"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               type="button"
-              onClick={() => setWeekStart(startOfWeek(new Date()))}
+              onClick={() => {
+                const now = new Date();
+
+                setToday(now);
+                setRangeStart(startOfDay(now));
+              }}
               className="h-9 rounded-full px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
             >
               Today
             </button>
             <button
               type="button"
-              onClick={() => setWeekStart((current) => addDays(current ?? startOfWeek(new Date()), 7))}
+              onClick={() => setRangeStart((current) => addDays(current ?? startOfDay(new Date()), 7))}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-100 transition hover:bg-white/6"
-              aria-label="Next week"
+              aria-label="Next 7-day range"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -302,15 +348,37 @@ export function HourlyScrimCalendar({
         <div className="grid min-w-[1040px] grid-cols-7 gap-3">
           {days.map((day) => {
             const dayKey = day.toISOString();
+            const isToday = today ? isSameDay(day, today) : false;
             const scrollState = dayScrollState[dayKey] ?? {
               canScrollDown: true,
               canScrollUp: false,
             };
 
             return (
-            <div key={dayKey} className="group overflow-hidden rounded-[18px] border border-line bg-white/4">
-              <div className="border-b border-line bg-slate-950/35 px-3 py-3">
-                <p className="text-sm font-semibold text-white">{formatLocalDay(day, timeZone)}</p>
+            <div
+              key={dayKey}
+              aria-current={isToday ? "date" : undefined}
+              className={cn(
+                "group overflow-hidden rounded-[18px] border bg-white/4 transition",
+                isToday
+                  ? "border-accent/70 bg-accent/8 shadow-[0_0_0_1px_rgba(239,124,52,0.34),0_18px_50px_rgba(239,124,52,0.14)]"
+                  : "border-line",
+              )}
+            >
+              <div
+                className={cn(
+                  "border-b px-3 py-3",
+                  isToday ? "border-accent/40 bg-accent/12" : "border-line bg-slate-950/35",
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-semibold text-white">{formatLocalDay(day, timeZone)}</p>
+                  {isToday ? (
+                    <span className="rounded-full border border-accent/40 bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-950">
+                      Today
+                    </span>
+                  ) : null}
+                </div>
                 <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted">
                   {getTimeZoneName(day, timeZone)}
                 </p>
@@ -328,10 +396,11 @@ export function HourlyScrimCalendar({
                   {hours.map((hour) => {
                     const slotStart = makeLocalSlot(day, hour);
                     const slotEnd = makeLocalSlot(day, hour + 1);
-                    const slotEvents = events.filter((event) =>
+                    const slotEvents = visibleEvents.filter((event) =>
                       overlapsHour(event.startTime, event.endTime, slotStart, slotEnd),
                     );
                     const hasScheduledBlock = slotEvents.some(blocksNewAvailability);
+                    const isPastSlot = today ? isElapsedSlot(slotEnd, today) : true;
 
                     return (
                       <div
@@ -346,7 +415,7 @@ export function HourlyScrimCalendar({
                               {getTimeZoneName(slotStart, timeZone)}
                             </p>
                           </div>
-                          {canManage && !hasScheduledBlock ? (
+                          {canManage && !hasScheduledBlock && !isPastSlot ? (
                             <button
                               type="button"
                               onClick={() => openSlot(day, hour)}
@@ -436,9 +505,6 @@ export function HourlyScrimCalendar({
         <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1">
           Looking For Scrim
         </span>
-        <span className="rounded-full border border-accent-strong/30 bg-accent-strong/10 px-3 py-1">
-          Pending Request
-        </span>
         <span className="rounded-full border border-sky-300/30 bg-sky-300/10 px-3 py-1">
           Confirmed Scrim
         </span>
@@ -454,6 +520,10 @@ export function HourlyScrimCalendar({
             overlapsHour(request.startTime, request.endTime, new Date(selectedSlot.startTime), new Date(selectedSlot.endTime)),
           )}
           timeZone={timeZone}
+          onCreate={(event) => {
+            setOptimisticEvents((current) => mergeCalendarEvents(current, [event]));
+            setActionFeedback("Looking For Scrim block created.");
+          }}
           onClose={() => setSelectedSlot(null)}
         />
       ) : null}
@@ -540,6 +610,7 @@ function CalendarSlotModal({
   selectedTeam,
   requests,
   timeZone,
+  onCreate,
   onClose,
 }: {
   slot: SelectedSlot;
@@ -547,6 +618,7 @@ function CalendarSlotModal({
   selectedTeam: ScrimTeamOption;
   requests: ScrimRequestSummary[];
   timeZone: string;
+  onCreate: (event: ScrimCalendarEvent) => void;
   onClose: () => void;
 }) {
   const router = useRouter();
@@ -591,7 +663,7 @@ function CalendarSlotModal({
                 tab === item ? "bg-accent text-slate-950" : "text-slate-100 hover:bg-white/6",
               )}
             >
-              {item === "availability" ? "Looking For Scrim" : `Requests (${requests.length})`}
+              {item === "availability" ? "Looking For Scrim" : `Sent Scrims (${requests.length})`}
             </button>
           ))}
         </div>
@@ -614,9 +686,31 @@ function CalendarSlotModal({
                   }),
                 });
 
-                setFeedback(await readMessage(response, "Availability block created."));
+                const payload = (await response.json().catch(() => null)) as {
+                  id?: string;
+                  message?: string;
+                } | null;
+
+                setFeedback(payload?.message ?? "Availability block created.");
 
                 if (response.ok) {
+                  const createdTeam = teams.find((team) => team.id === form.teamId);
+
+                  if (payload?.id && form.teamId === selectedTeam.id) {
+                    onCreate({
+                      id: payload.id,
+                      kind: "availability",
+                      notes: null,
+                      opponentName: null,
+                      startTime: slot.startTime,
+                      endTime: slot.endTime,
+                      status: "OPEN",
+                      title: "Open availability",
+                    });
+                  } else if (createdTeam) {
+                    setFeedback(`Saved for ${createdTeam.name}.`);
+                  }
+
                   router.refresh();
                   onClose();
                 }
@@ -641,7 +735,7 @@ function CalendarSlotModal({
                 >
                   {manageableTeams.map((team) => (
                     <option key={team.id} value={team.id} className="bg-slate-950">
-                      {team.name} ({team.tag})
+                      {team.name}
                     </option>
                   ))}
                 </select>
@@ -649,12 +743,19 @@ function CalendarSlotModal({
 
               <label className="grid gap-2 text-sm text-slate-200">
                 Region
-                <input
+                <select
                   value={form.region}
                   onChange={(event) => setForm((current) => ({ ...current, region: event.target.value }))}
                   disabled={isPending}
+                  aria-label="Region"
                   className="h-11 rounded-[14px] border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
-                />
+                >
+                  {REGION_OPTIONS.map((region) => (
+                    <option key={region} value={region} className="bg-slate-950">
+                      {region}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
@@ -696,9 +797,9 @@ function CalendarSlotModal({
               ))
             ) : (
               <div className="rounded-[18px] border border-line bg-white/5 p-5">
-                <p className="font-medium text-white">No requests for this hour</p>
+                <p className="font-medium text-white">No sent scrims for this hour</p>
                 <p className="mt-2 text-sm leading-6 text-muted">
-                  Requests will appear here once another team asks for this block.
+                  Sent scrims appear here after your team requests an open block.
                 </p>
               </div>
             )}

@@ -21,6 +21,8 @@ async function main() {
   await prisma.tournament.deleteMany();
   await prisma.scheduleEvent.deleteMany();
   await prisma.notification.deleteMany();
+  await prisma.scrimMessage.deleteMany();
+  await prisma.scrimConversation.deleteMany();
   await prisma.scrim.deleteMany();
   await prisma.scrimBookingRequest.deleteMany();
   await prisma.scrimAvailabilityBlock.deleteMany();
@@ -37,7 +39,7 @@ async function main() {
         profileName: "Maya Voltage",
         avatarUrl: "https://avatars.fastly.steamstatic.com/0.jpg",
         headline: "IGL looking to scrim four nights a week.",
-        region: "NA East",
+        region: "NA",
         deadlockRank: "Phantom",
         deadlockRankTier: 6,
         isLFT: true,
@@ -49,7 +51,7 @@ async function main() {
         profileName: "Jordan Harbor",
         avatarUrl: "https://avatars.fastly.steamstatic.com/1.jpg",
         headline: "Flex support and vod review junkie.",
-        region: "NA Central",
+        region: "NA",
         deadlockRank: "Oracle",
         deadlockRankTier: 5,
       },
@@ -60,7 +62,7 @@ async function main() {
         profileName: "Casey Reverb",
         avatarUrl: "https://avatars.fastly.steamstatic.com/2.jpg",
         headline: "Initiator main, event organizer, and bracket gremlin.",
-        region: "EU West",
+        region: "EU",
         deadlockRank: "Archon",
         deadlockRankTier: 4,
       },
@@ -71,7 +73,7 @@ async function main() {
         profileName: "Neo Drift",
         avatarUrl: "https://avatars.fastly.steamstatic.com/3.jpg",
         headline: "Aim-heavy duelist chasing weekly cups.",
-        region: "NA West",
+        region: "NA",
         deadlockRank: "Phantom",
         deadlockRankTier: 6,
       },
@@ -83,13 +85,13 @@ async function main() {
       slug: "chronoshift",
       name: "Chronoshift",
       tag: "CSH",
-      region: "NA East",
+      region: "NA",
       focus: "Disciplined macro with nightly VOD blocks.",
       primaryRank: "Phantom",
       description:
         "A growth-focused Deadlock roster for players who want structured practice, film review, and reliable scrim blocks.",
       recruiting: true,
-      openRoles: ["Flex", "Coach"],
+      openRoles: ["Position 2 (Soft carry)", "Coach"],
       ownerId: maya.id,
       memberships: {
         create: [
@@ -105,13 +107,13 @@ async function main() {
       slug: "harbor-nine",
       name: "Harbor Nine",
       tag: "HB9",
-      region: "NA Central",
+      region: "NA",
       focus: "Fast tempo fights and early tower pressure.",
       primaryRank: "Oracle",
       description:
         "Midwest scrim squad building a consistent tournament pipeline through Faceit weeklies and community invitationals.",
       recruiting: true,
-      openRoles: ["Anchor", "Analyst"],
+      openRoles: ["Position 4 (Frontline)", "Analyst"],
       ownerId: jordan.id,
       memberships: {
         create: [
@@ -127,7 +129,7 @@ async function main() {
       slug: "glasshouse",
       name: "Glasshouse",
       tag: "GLS",
-      region: "EU West",
+      region: "EU",
       focus: "Execution-heavy set plays with weekend qualifiers.",
       primaryRank: "Archon",
       description:
@@ -148,7 +150,7 @@ async function main() {
       createdById: maya.id,
       status: ScrimStatus.CONFIRMED,
       format: "Bo3",
-      region: "NA East",
+      region: "NA",
       wantedRank: "Oracle+",
       notes: "Looking for comms-focused sets with 10 minute feedback after each map.",
       startsAt: hoursFromNow(8),
@@ -234,7 +236,7 @@ async function main() {
         type: ScheduleEventType.SCRIM,
         startsAt: hoursFromNow(8),
         endsAt: hoursFromNow(11),
-        location: "Discord / NA East",
+        location: "Discord / NA",
         notes: "Server host rotates each map.",
       },
       {
@@ -272,7 +274,7 @@ async function main() {
       slug: "faceit-weekly",
       name: "Faceit Deadlock Weekly",
       organizer: "FACEIT",
-      region: "North America",
+      region: "NA",
       platform: "FACEIT",
       format: "Single Elimination Bo3",
       prizePool: "$750",
@@ -288,7 +290,7 @@ async function main() {
       slug: "death-slam-open",
       name: "Death Slam Open",
       organizer: "Death Slam",
-      region: "Europe",
+      region: "EU",
       platform: "External Bracket",
       format: "Swiss into Top 8",
       prizePool: "Community-funded",

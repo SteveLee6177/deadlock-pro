@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { addDays, format, isSameDay, startOfMonth, startOfWeek } from "date-fns";
+import { addDays, format, isSameDay, startOfDay, startOfMonth, startOfWeek } from "date-fns";
 import { CalendarDays } from "lucide-react";
 import { LocalScheduleRange } from "@/components/local-schedule-range";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
@@ -36,7 +36,7 @@ export function ScrimCalendarBoard({
   const [view, setView] = useState<"month" | "week" | "day">(defaultView);
   const [today, setToday] = useState<Date | null>(null);
   const weekDays = useMemo(
-    () => (today ? Array.from({ length: 7 }, (_, index) => addDays(startOfWeek(today), index)) : []),
+    () => (today ? Array.from({ length: 7 }, (_, index) => addDays(startOfDay(today), index)) : []),
     [today],
   );
   const monthDays = useMemo(
@@ -49,11 +49,20 @@ export function ScrimCalendarBoard({
   const visibleDays = view === "month" ? monthDays : view === "week" ? weekDays : today ? [today] : [];
 
   useEffect(() => {
+    let todayInterval: number | undefined;
+
     const frame = window.requestAnimationFrame(() => {
       setToday(new Date());
+      todayInterval = window.setInterval(() => setToday(new Date()), 60_000);
     });
 
-    return () => window.cancelAnimationFrame(frame);
+    return () => {
+      window.cancelAnimationFrame(frame);
+
+      if (todayInterval) {
+        window.clearInterval(todayInterval);
+      }
+    };
   }, []);
 
   if (!today) {
@@ -107,18 +116,31 @@ export function ScrimCalendarBoard({
       >
         {visibleDays.map((day) => {
           const dayEvents = events.filter((event) => isSameDay(new Date(event.startTime), day));
+          const isToday = isSameDay(day, today);
 
           return (
             <div
               key={day.toISOString()}
+              aria-current={isToday ? "date" : undefined}
               className={cn(
-                "min-h-36 rounded-[18px] border border-line bg-white/4 p-3",
-                isSameDay(day, today) ? "border-accent/50" : "",
+                "min-h-36 rounded-[18px] border bg-white/4 p-3 transition",
+                isToday
+                  ? "border-accent/70 bg-accent/8 shadow-[0_0_0_1px_rgba(239,124,52,0.34),0_18px_50px_rgba(239,124,52,0.14)]"
+                  : "border-line",
               )}
             >
               <div className="flex items-baseline justify-between gap-2">
                 <p className="text-sm font-semibold text-white">{format(day, "EEE")}</p>
-                <p className="text-xs text-muted">{format(day, "MMM d")}</p>
+                <div className="flex items-center gap-2">
+                  {isToday ? (
+                    <span className="rounded-full border border-accent/40 bg-accent px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-950">
+                      Today
+                    </span>
+                  ) : null}
+                  <p className={cn("text-xs", isToday ? "font-semibold text-accent-strong" : "text-muted")}>
+                    {format(day, "MMM d")}
+                  </p>
+                </div>
               </div>
               <div className="mt-3 space-y-2">
                 {dayEvents.length > 0 ? (
@@ -153,9 +175,6 @@ export function ScrimCalendarBoard({
       <div className="mt-5 flex flex-wrap gap-3 text-xs text-muted">
         <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1">
           Open Availability
-        </span>
-        <span className="rounded-full border border-accent-strong/30 bg-accent-strong/10 px-3 py-1">
-          Pending Request
         </span>
         <span className="rounded-full border border-sky-300/30 bg-sky-300/10 px-3 py-1">
           Confirmed Scrim

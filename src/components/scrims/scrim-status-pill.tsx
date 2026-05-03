@@ -6,7 +6,7 @@ const STATUS_STYLES: Record<string, string> = {
   CONFIRMED: "border-sky-300/30 bg-sky-300/10 text-sky-200",
   ACCEPTED: "border-sky-300/30 bg-sky-300/10 text-sky-200",
   BOOKED: "border-sky-300/30 bg-sky-300/10 text-sky-200",
-  DECLINED: "border-line bg-white/5 text-muted",
+  DECLINED: "border-rose-300/40 bg-rose-300/12 text-rose-200",
   CANCELLED: "border-rose-300/30 bg-rose-300/10 text-rose-200",
   COMPLETED: "border-line bg-white/5 text-slate-200",
 };

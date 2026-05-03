@@ -3,19 +3,16 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
+import { REGION_OPTIONS } from "@/lib/regions";
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, "Team name must be at least 2 characters."),
-  tag: z
-    .string()
-    .trim()
-    .min(2, "Team tag must be at least 2 characters.")
-    .max(5, "Team tag must be 5 characters or fewer."),
-  region: z.string().trim().min(2, "Region must be at least 2 characters."),
+  region: z.enum(REGION_OPTIONS, "Choose a valid region."),
   rank: z.string().trim().min(2, "Primary rank must be at least 2 characters."),
-  focus: z.string().trim().min(2, "Team focus must be at least 2 characters."),
-  openRoles: z.string().trim().optional(),
-  description: z.string().trim().min(10, "Description must be at least 10 characters."),
+  recruiting: z.boolean().default(false),
+  openRoles: z.array(z.enum(RECRUITING_ROLE_OPTIONS)).default([]),
+  description: z.string().trim().optional().default(""),
 });
 
 function slugify(input: string) {
@@ -24,6 +21,12 @@ function slugify(input: string) {
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+function createInternalTeamTag(slugBase: string) {
+  const prefix = slugBase.replace(/-/g, "").slice(0, 12).toUpperCase() || "TEAM";
+
+  return `${prefix}-${Date.now().toString(36).toUpperCase()}`;
 }
 
 function validationMessage(error: z.ZodError) {
@@ -62,17 +65,15 @@ export async function POST(request: Request) {
     data: {
       slug: `${slugBase}-${Date.now().toString().slice(-4)}`,
       name: payload.name,
-      tag: payload.tag.toUpperCase(),
+      tag: createInternalTeamTag(slugBase),
       region: payload.region,
       primaryRank: payload.rank,
-      focus: payload.focus,
+      focus: payload.recruiting
+        ? "Recruiting high-level players for structured scrims and tournament preparation."
+        : "Established high-level roster focused on scrims and tournament preparation.",
       description: payload.description,
-      openRoles: payload.openRoles
-        ? payload.openRoles
-            .split(",")
-            .map((role) => role.trim())
-            .filter(Boolean)
-        : [],
+      recruiting: payload.recruiting,
+      openRoles: payload.recruiting ? Array.from(new Set(payload.openRoles)) : [],
       ownerId: owner.id,
       memberships: {
         create: {

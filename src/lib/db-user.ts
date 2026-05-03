@@ -48,7 +48,10 @@ export async function getCurrentUserMemberships() {
         },
       },
     },
-    orderBy: { joinedAt: "asc" },
+    orderBy: [
+      { role: "asc" },
+      { joinedAt: "asc" },
+    ],
   });
 
   return {

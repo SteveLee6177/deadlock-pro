@@ -3,23 +3,17 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronDown, Plus, UserPlus } from "lucide-react";
+import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
 import type { TeamProfile } from "@/lib/types";
 
-const ROLE_OPTIONS = [
-  "Position 1",
-  "Position 2",
-  "Position 3",
-  "Position 4",
-  "Position 5",
-  "Position 6",
-  "Coach",
-  "Manager",
-  "Analyst",
-  "Substitute",
-];
+const RECRUITING_ROLE_SET = new Set<string>(RECRUITING_ROLE_OPTIONS);
 
 function uniqueRoles(roles: string[]) {
   return Array.from(new Set(roles));
+}
+
+function validRecruitingRoles(roles: string[]) {
+  return uniqueRoles(roles.filter((role) => RECRUITING_ROLE_SET.has(role)));
 }
 
 function sameRoles(first: string[], second: string[]) {
@@ -35,13 +29,13 @@ export function TeamRecruitingForm({ team }: { team: TeamProfile }) {
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedForm, setSavedForm] = useState({
     recruiting: team.recruiting,
-    openRoles: team.openRoles,
+    openRoles: validRecruitingRoles(team.openRoles),
     focus: team.focus,
     description: team.description,
   });
   const [form, setForm] = useState({
     recruiting: team.recruiting,
-    openRoles: team.openRoles,
+    openRoles: validRecruitingRoles(team.openRoles),
     focus: team.focus,
     description: team.description,
   });
@@ -114,15 +108,15 @@ export function TeamRecruitingForm({ team }: { team: TeamProfile }) {
           <p className="eyebrow">Recruiting Needs</p>
           <h2 className="mt-1 font-display text-3xl font-bold text-white">Open recruitment for your team</h2>
           <p className="mt-3 max-w-2xl text-sm leading-6 text-muted">
-            When recruitment is open, players can find your team in Browse Teams and request a
-            tryout for the roles you list here.
+            When recruitment is open, players can find your team in Browse Teams and apply to join
+            with one click.
           </p>
         </div>
       </div>
 
       <label className="mt-6 flex items-center justify-between gap-4 rounded-lg border border-line bg-white/5 p-4 text-sm text-slate-100">
         <span>
-          <span className="block font-medium text-white">Open team to tryout requests</span>
+          <span className="block font-medium text-white">Open team to applications</span>
           <span className="mt-1 block text-muted">Turn this off when the roster is closed.</span>
         </span>
         <span className="flex items-center gap-3">
@@ -148,7 +142,7 @@ export function TeamRecruitingForm({ team }: { team: TeamProfile }) {
               Choose the exact roles a serious applicant should see in Browse Teams.
             </p>
             <div className="mt-3 flex flex-wrap gap-2">
-              {ROLE_OPTIONS.map((role) => {
+              {RECRUITING_ROLE_OPTIONS.map((role) => {
                 const selected = form.openRoles.includes(role);
 
                 return (
@@ -179,7 +173,7 @@ export function TeamRecruitingForm({ team }: { team: TeamProfile }) {
               disabled={isPending}
               required
               minLength={10}
-              placeholder="Example: Eternus-level roster looking for a Position 5 with disciplined comms, VOD review availability, and scrim experience against organized teams."
+              placeholder="Describe what you're looking for: characters, role fit, availability, comms, and team goals."
               className="min-h-28 rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
             />
           </label>

@@ -12,6 +12,7 @@ import {
   getCurrentScrimTeams,
   getOpenAvailabilityBlocks,
   getScrimWorkspace,
+  removeDeclinedMatchupBlocks,
 } from "@/lib/scrim-data";
 
 export default async function FindScrimsPage() {
@@ -21,16 +22,26 @@ export default async function FindScrimsPage() {
     getOpenAvailabilityBlocks(),
     getScrimWorkspace(),
   ]);
-  const pendingCount = workspace.incomingRequests.filter((request) => request.status === "PENDING").length;
+  const currentCount = workspace.upcomingScrims.length;
+  const incomingCount = workspace.incomingRequests.length;
+  const sentCount = workspace.outgoingRequests.length;
   const ownTeamIds = new Set(teams.map((team) => team.id));
-  const visibleBlocks = blocks.filter((block) => !ownTeamIds.has(block.teamId));
+  const visibleBlocks = await removeDeclinedMatchupBlocks(
+    blocks.filter((block) => !ownTeamIds.has(block.teamId)),
+    teams.map((team) => team.id),
+  );
 
   return (
     <div className="min-h-screen">
       <SiteHeader user={user} />
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
-        <ScrimNav active="find" pendingCount={pendingCount} />
+        <ScrimNav
+          active="find"
+          currentCount={currentCount}
+          incomingCount={incomingCount}
+          sentCount={sentCount}
+        />
 
         <section className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>

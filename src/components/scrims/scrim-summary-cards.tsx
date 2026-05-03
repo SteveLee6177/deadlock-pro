@@ -99,8 +99,7 @@ export function AvailabilityBlockCard({
     <article className="rounded-lg border border-line bg-white/5 p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">{block.teamTag}</p>
-          <h3 className="mt-2 font-display text-2xl font-bold text-white">{block.teamName}</h3>
+          <h3 className="font-display text-2xl font-bold text-white">{block.teamName}</h3>
         </div>
         <ScrimStatusPill status={block.status} />
       </div>

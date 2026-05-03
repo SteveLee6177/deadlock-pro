@@ -11,7 +11,6 @@ export function TeamJoinForm({
   disabled: boolean;
 }) {
   const router = useRouter();
-  const [message, setMessage] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -28,35 +27,29 @@ export function TeamJoinForm({
             headers: {
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ message }),
           });
 
           const payload = (await response.json()) as { message?: string };
           setFeedback(
-            payload.message ?? (response.ok ? "Trial request sent." : "Unable to request trial."),
+            payload.message ?? (response.ok ? "Application sent." : "Unable to apply."),
           );
 
           if (response.ok) {
-            setMessage("");
             router.refresh();
           }
         });
       }}
     >
       <div className="mb-4">
-        <p className="eyebrow">Request Trial</p>
+        <p className="eyebrow">Apply to Join</p>
         <h3 className="mt-2 font-display text-2xl font-bold text-white">
-          Submit your performance case
+          Send your application
         </h3>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          One click sends your profile to the team owner and managers. They will decide the next
+          step from their My Team page.
+        </p>
       </div>
-
-      <textarea
-        value={message}
-        onChange={(event) => setMessage(event.target.value)}
-        placeholder="Role, rank, server region, weekly availability, scrim history, notable results, and why you should get a trial block."
-        className="min-h-32 w-full rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-accent"
-        disabled={disabled || isPending}
-      />
 
       <div className="mt-4 flex items-center justify-between gap-4">
         <button
@@ -64,7 +57,7 @@ export function TeamJoinForm({
           disabled={disabled || isPending}
           className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isPending ? "Sending..." : "Request tryout"}
+          {isPending ? "Applying..." : "Apply to Join"}
         </button>
         {feedback ? <p className="text-sm text-muted">{feedback}</p> : null}
       </div>

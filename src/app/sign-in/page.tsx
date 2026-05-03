@@ -17,7 +17,8 @@ export default async function SignInPage() {
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
             Scrimlock uses Steam OpenID for sign-in. Once the Steam identity is verified,
-            captains can evaluate trial requests with a rank signal tied to a real Steam profile.
+            team owners and managers can evaluate applications with a rank signal tied to a real
+            Steam profile.
           </p>
 
           <a

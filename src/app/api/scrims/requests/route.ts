@@ -29,6 +29,36 @@ async function hasConfirmedOverlap(teamId: string, startTime: Date, endTime: Dat
   return Boolean(overlap);
 }
 
+async function hasDeclinedMatchupForSlot(
+  requestingTeamId: string,
+  receivingTeamId: string,
+  startTime: Date,
+  endTime: Date,
+) {
+  const declinedRequests = await prisma.scrimBookingRequest.findMany({
+    where: {
+      status: "DECLINED",
+      OR: [
+        { requestingTeamId, receivingTeamId },
+        { requestingTeamId: receivingTeamId, receivingTeamId: requestingTeamId },
+      ],
+    },
+    include: {
+      availabilityBlock: {
+        select: {
+          startTime: true,
+          endTime: true,
+        },
+      },
+    },
+    take: 100,
+  });
+
+  return declinedRequests.some((scrimRequest) => {
+    return scrimRequest.availabilityBlock.startTime < endTime && scrimRequest.availabilityBlock.endTime > startTime;
+  });
+}
+
 async function notifyManagers(teamId: string, title: string, body: string, relatedEntityId: string) {
   const managers = await prisma.teamMembership.findMany({
     where: {
@@ -100,6 +130,17 @@ export async function POST(request: Request) {
 
   if (await hasConfirmedOverlap(parsed.data.requestingTeamId, block.startTime, block.endTime)) {
     return jsonError("Your team already has a confirmed scrim during that time.", 409);
+  }
+
+  if (
+    await hasDeclinedMatchupForSlot(
+      parsed.data.requestingTeamId,
+      block.teamId,
+      block.startTime,
+      block.endTime,
+    )
+  ) {
+    return jsonError("This matchup was already declined for that time slot.", 409);
   }
 
   const requestingTeam = await prisma.team.findUnique({

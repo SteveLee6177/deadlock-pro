@@ -15,6 +15,7 @@ import {
   RequestCard,
   UpcomingScrimList,
 } from "@/components/scrims/scrim-summary-cards";
+import { ScrimChatButton } from "@/components/scrims/scrim-chat-button";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentScrimTeams, getTeamScrimPage } from "@/lib/scrim-data";
@@ -51,7 +52,7 @@ export default async function TeamScrimsPage({
         <section className="surface-strong rounded-lg p-8 md:p-10">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <p className="eyebrow">{pageData.team.tag} Scrims</p>
+              <p className="eyebrow">Team Scrims</p>
               <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
                 {pageData.team.name}
               </h1>
@@ -109,7 +110,14 @@ export default async function TeamScrimsPage({
                     scrims={pageData.upcomingScrims}
                     teamId={pageData.team.id}
                     actions={
-                      pageData.canManage ? (scrim) => <ScrimMatchManager scrim={scrim} /> : undefined
+                      pageData.canManage
+                        ? (scrim) => (
+                            <div className="flex flex-wrap items-center gap-3">
+                              <ScrimChatButton entity={{ kind: "scrim", id: scrim.id }} />
+                              <ScrimMatchManager scrim={scrim} />
+                            </div>
+                          )
+                        : undefined
                     }
                   />
                 </div>
@@ -126,10 +134,13 @@ export default async function TeamScrimsPage({
                         request={request}
                         direction={request.receivingTeamId === pageData.team.id ? "incoming" : "outgoing"}
                         actions={
-                          pageData.canManage &&
-                          request.receivingTeamId === pageData.team.id &&
-                          request.status === "PENDING" ? (
-                            <RequestActions requestId={request.id} />
+                          pageData.canManage ? (
+                            <>
+                              {request.receivingTeamId === pageData.team.id &&
+                              request.status === "PENDING" ? (
+                                <RequestActions requestId={request.id} />
+                              ) : null}
+                            </>
                           ) : undefined
                         }
                       />

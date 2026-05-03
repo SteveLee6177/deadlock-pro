@@ -1,7 +1,7 @@
 import { canUseDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
 
-const SCRIM_MANAGER_ROLES = new Set(["OWNER", "MANAGER", "CAPTAIN"]);
+const SCRIM_MANAGER_ROLES = new Set(["OWNER", "MANAGER"]);
 
 export function isScrimManagerRole(role: string | null | undefined) {
   return Boolean(role && SCRIM_MANAGER_ROLES.has(role));

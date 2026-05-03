@@ -191,6 +191,33 @@ export async function PATCH(
         data: { status: "BOOKED" },
       });
 
+      const conflictingBlocks = await tx.scrimAvailabilityBlock.findMany({
+        where: {
+          id: { not: freshRequest.availabilityBlockId },
+          teamId: { in: [freshRequest.receivingTeamId, freshRequest.requestingTeamId] },
+          status: { in: ["OPEN", "PENDING"] },
+          startTime: { lt: freshRequest.availabilityBlock.endTime },
+          endTime: { gt: freshRequest.availabilityBlock.startTime },
+        },
+        select: { id: true },
+      });
+      const conflictingBlockIds = conflictingBlocks.map((block) => block.id);
+
+      if (conflictingBlockIds.length > 0) {
+        await tx.scrimAvailabilityBlock.updateMany({
+          where: { id: { in: conflictingBlockIds } },
+          data: { status: "CANCELLED" },
+        });
+
+        await tx.scrimBookingRequest.updateMany({
+          where: {
+            availabilityBlockId: { in: conflictingBlockIds },
+            status: "PENDING",
+          },
+          data: { status: "DECLINED" },
+        });
+      }
+
       await tx.scheduleEvent.createMany({
         data: [
           {

@@ -3,12 +3,13 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const scrimSchema = z.object({
   requesterTeamId: z.string().min(1),
   startsAt: z.string().min(1),
-  region: z.string().min(2),
+  region: z.enum(REGION_OPTIONS),
   format: z.string().min(2),
   wantedRank: z.string().min(2),
   notes: z.string().optional(),

@@ -9,8 +9,7 @@ export function ScrimCard({ scrim }: { scrim: OpenScrim }) {
     <article className="surface rounded-lg p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.22em] text-accent-strong">{scrim.requesterTag}</p>
-          <h3 className="mt-2 font-display text-2xl font-bold text-white">
+          <h3 className="font-display text-2xl font-bold text-white">
             {scrim.requesterTeamName}
           </h3>
         </div>
