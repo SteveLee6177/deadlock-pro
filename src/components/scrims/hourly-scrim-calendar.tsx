@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { addDays, isSameDay, startOfDay } from "date-fns";
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Plus, Send, X } from "lucide-react";
+import { RankBadge } from "@/components/rank-badge";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
 import { REGION_OPTIONS } from "@/lib/regions";
 import { cn } from "@/lib/utils";
@@ -781,9 +782,16 @@ function CalendarSlotModal({
                       <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">
                         {request.requestingTeamName} to {request.receivingTeamName}
                       </p>
-                      <h3 className="mt-2 font-display text-2xl font-bold text-white">
-                        {request.requestingTeamRegion} · {request.requestingTeamRank}
-                      </h3>
+                      <div className="mt-2 flex items-center gap-3">
+                        <h3 className="font-display text-2xl font-bold text-white">
+                          {request.requestingTeamRegion}
+                        </h3>
+                        <RankBadge
+                          badgeLevel={request.requestingTeamRankBadgeLevel}
+                          rank={request.requestingTeamRank}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                     <ScrimStatusPill status={request.status} />
                   </div>

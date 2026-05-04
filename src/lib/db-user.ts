@@ -18,13 +18,13 @@ export async function getOrCreateCurrentDbUser() {
     update: {
       profileName: user.profileName,
       avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
     },
     create: {
       steamId: user.steamId,
       profileName: user.profileName,
       avatarUrl: user.avatarUrl,
       deadlockRank: user.deadlockRank,
+      deadlockRankBadgeLevel: user.deadlockRankBadgeLevel,
     },
   });
 }

@@ -20,9 +20,11 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
       select: {
         id: true,
         steamId: true,
+        discordUsername: true,
         profileName: true,
         avatarUrl: true,
         deadlockRank: true,
+        deadlockRankBadgeLevel: true,
       },
     });
 

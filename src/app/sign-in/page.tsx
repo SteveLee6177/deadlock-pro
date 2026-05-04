@@ -1,9 +1,22 @@
 import { ArrowRight, Lock, ShieldCheck } from "lucide-react";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { getCurrentUser } from "@/lib/auth";
+import { safeReturnPath } from "@/lib/team-invites";
 
-export default async function SignInPage() {
+export default async function SignInPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ returnTo?: string | string[] }>;
+}) {
   const user = await getCurrentUser();
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const returnToParam = Array.isArray(resolvedSearchParams.returnTo)
+    ? resolvedSearchParams.returnTo[0]
+    : resolvedSearchParams.returnTo;
+  const returnTo = safeReturnPath(returnToParam);
+  const steamHref = returnTo
+    ? `/api/auth/steam?returnTo=${encodeURIComponent(returnTo)}`
+    : "/api/auth/steam";
 
   return (
     <div className="min-h-screen">
@@ -22,7 +35,7 @@ export default async function SignInPage() {
           </p>
 
           <a
-            href="/api/auth/steam"
+            href={steamHref}
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
           >
             Verify with Steam

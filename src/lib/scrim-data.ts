@@ -38,6 +38,7 @@ function mapAvailability(block: {
     name: string;
     tag: string;
     primaryRank: string;
+    primaryRankBadgeLevel: number | null;
   };
 }): ScrimAvailabilitySummary {
   return {
@@ -48,6 +49,7 @@ function mapAvailability(block: {
     teamTag: block.team.tag,
     region: normalizeRegion(block.region),
     rank: block.team.primaryRank,
+    rankBadgeLevel: block.team.primaryRankBadgeLevel,
     startTime: block.startTime.toISOString(),
     endTime: block.endTime.toISOString(),
     notes: block.notes,
@@ -72,12 +74,14 @@ function mapRequest(request: {
     name: string;
     region: string;
     primaryRank: string;
+    primaryRankBadgeLevel: number | null;
   };
   receivingTeam: {
     slug: string;
     name: string;
     region: string;
     primaryRank: string;
+    primaryRankBadgeLevel: number | null;
   };
 }): ScrimRequestSummary {
   return {
@@ -88,11 +92,13 @@ function mapRequest(request: {
     requestingTeamSlug: request.requestingTeam.slug,
     requestingTeamRegion: normalizeRegion(request.requestingTeam.region),
     requestingTeamRank: request.requestingTeam.primaryRank,
+    requestingTeamRankBadgeLevel: request.requestingTeam.primaryRankBadgeLevel,
     receivingTeamId: request.receivingTeamId,
     receivingTeamName: request.receivingTeam.name,
     receivingTeamSlug: request.receivingTeam.slug,
     receivingTeamRegion: normalizeRegion(request.receivingTeam.region),
     receivingTeamRank: request.receivingTeam.primaryRank,
+    receivingTeamRankBadgeLevel: request.receivingTeam.primaryRankBadgeLevel,
     startTime: request.availabilityBlock.startTime.toISOString(),
     endTime: request.availabilityBlock.endTime.toISOString(),
     message: request.message,
@@ -162,6 +168,7 @@ function demoOpenBlocks(): ScrimAvailabilitySummary[] {
       teamTag: scrim.requesterTag,
       region: normalizeRegion(scrim.region),
       rank: scrim.wantedRank,
+      rankBadgeLevel: null,
       startTime: startTime.toISOString(),
       endTime: endTime.toISOString(),
       notes: scrim.notes,
@@ -193,6 +200,7 @@ export async function getCurrentScrimTeams(): Promise<ScrimTeamOption[]> {
       tag: true,
       region: true,
       primaryRank: true,
+      primaryRankBadgeLevel: true,
     },
   });
   const teamById = new Map(teams.map((team) => [team.id, team]));
@@ -266,6 +274,7 @@ export async function getOpenAvailabilityBlocks(
           name: true,
           tag: true,
           primaryRank: true,
+          primaryRankBadgeLevel: true,
         },
       },
     },
@@ -397,6 +406,7 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
               name: true,
               tag: true,
               primaryRank: true,
+              primaryRankBadgeLevel: true,
             },
           },
         },
@@ -474,6 +484,7 @@ const requestIncludes = {
       name: true,
       region: true,
       primaryRank: true,
+      primaryRankBadgeLevel: true,
     },
   },
   receivingTeam: {
@@ -482,6 +493,7 @@ const requestIncludes = {
       name: true,
       region: true,
       primaryRank: true,
+      primaryRankBadgeLevel: true,
     },
   },
 };
@@ -559,6 +571,7 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
             name: true,
             tag: true,
             primaryRank: true,
+            primaryRankBadgeLevel: true,
           },
         },
       },
@@ -612,6 +625,7 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
     region: normalizeRegion(team.region),
     focus: team.focus,
     primaryRank: team.primaryRank,
+    primaryRankBadgeLevel: team.primaryRankBadgeLevel,
     description: team.description,
     recruiting: team.recruiting,
     openRoles: team.openRoles,

@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserCircle, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FocusEvent } from "react";
 import { TeamInviteBell } from "@/components/navigation/team-invite-bell";
+import { RankBadge } from "@/components/rank-badge";
 import type { SessionUser, UserTeamOption } from "@/lib/types";
 
 const navItems = [
@@ -16,6 +18,7 @@ const navItems = [
 const RECRUITING_MANAGER_ROLES = new Set(["OWNER", "MANAGER", "CAPTAIN"]);
 
 function TeamsNavMenu({ user }: { user: SessionUser | null }) {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [teams, setTeams] = useState<UserTeamOption[] | null>(user ? null : []);
 
@@ -28,23 +31,31 @@ function TeamsNavMenu({ user }: { user: SessionUser | null }) {
       };
     }
 
-    fetch("/api/profile/teams")
-      .then((response) => (response.ok ? response.json() : { teams: [] }))
-      .then((payload: { teams?: UserTeamOption[] }) => {
-        if (active) {
-          setTeams(payload.teams ?? []);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setTeams([]);
-        }
-      });
+    function loadTeams() {
+      setTeams(null);
+
+      fetch("/api/profile/teams", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : { teams: [] }))
+        .then((payload: { teams?: UserTeamOption[] }) => {
+          if (active) {
+            setTeams(payload.teams ?? []);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setTeams([]);
+          }
+        });
+    }
+
+    loadTeams();
+    window.addEventListener("team-memberships-changed", loadTeams);
 
     return () => {
       active = false;
+      window.removeEventListener("team-memberships-changed", loadTeams);
     };
-  }, [user]);
+  }, [pathname, user]);
 
   const primaryTeam = teams?.[0] ?? null;
   const ownTeamHref = primaryTeam ? `/teams?team=${primaryTeam.slug}` : "/teams";
@@ -180,11 +191,13 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
               <div className="hidden rounded-full border border-line bg-white/4 px-4 py-2 text-sm md:block">
                 <span className="text-muted">Signed in as </span>
                 <span className="font-medium">{user.profileName}</span>
-                {user.deadlockRank ? (
-                  <span className="ml-2 rounded-full bg-success/15 px-2 py-1 text-xs text-success">
-                    {user.deadlockRank}
-                  </span>
-                ) : null}
+                <span className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-success/15 align-middle">
+                  <RankBadge
+                    badgeLevel={user.deadlockRankBadgeLevel}
+                    rank={user.deadlockRank}
+                    size="sm"
+                  />
+                </span>
               </div>
               <form action="/api/auth/signout" method="post">
                 <button className="rounded-full border border-line px-4 py-2 text-sm font-medium transition hover:bg-white/6">

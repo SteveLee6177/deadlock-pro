@@ -33,6 +33,7 @@ export async function GET() {
             tag: true,
             region: true,
             primaryRank: true,
+            primaryRankBadgeLevel: true,
           },
         },
       },

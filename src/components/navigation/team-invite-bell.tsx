@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Bell, Check, ExternalLink, LoaderCircle, X } from "lucide-react";
 import { useEffect, useState, useTransition } from "react";
 import type { FocusEvent } from "react";
+import { RankBadge } from "@/components/rank-badge";
 
 type TeamInvite = {
   id: string;
@@ -17,6 +18,7 @@ type TeamInvite = {
     tag: string;
     region: string;
     primaryRank: string;
+    primaryRankBadgeLevel: number | null;
   };
 };
 
@@ -28,6 +30,7 @@ async function readMessage(response: Response, fallback: string) {
 
 export function TeamInviteBell() {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [invites, setInvites] = useState<TeamInvite[]>([]);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -38,25 +41,33 @@ export function TeamInviteBell() {
   useEffect(() => {
     let active = true;
 
-    fetch("/api/profile/invites")
-      .then((response) => (response.ok ? response.json() : { invites: [] }))
-      .then((payload: { invites?: TeamInvite[] }) => {
-        if (active) {
-          setInvites(payload.invites ?? []);
-          setLoading(false);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setInvites([]);
-          setLoading(false);
-        }
-      });
+    function loadInvites() {
+      setLoading(true);
+
+      fetch("/api/profile/invites", { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : { invites: [] }))
+        .then((payload: { invites?: TeamInvite[] }) => {
+          if (active) {
+            setInvites(payload.invites ?? []);
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setInvites([]);
+            setLoading(false);
+          }
+        });
+    }
+
+    loadInvites();
+    window.addEventListener("team-memberships-changed", loadInvites);
 
     return () => {
       active = false;
+      window.removeEventListener("team-memberships-changed", loadInvites);
     };
-  }, []);
+  }, [pathname]);
 
   function handleBlur(event: FocusEvent<HTMLDivElement>) {
     const nextFocus = event.relatedTarget;
@@ -90,6 +101,7 @@ export function TeamInviteBell() {
 
       if (response.ok) {
         setInvites((current) => current.filter((invite) => invite.id !== inviteId));
+        window.dispatchEvent(new Event("team-memberships-changed"));
         router.refresh();
       }
     });
@@ -149,9 +161,16 @@ export function TeamInviteBell() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-white">{invite.team.name}</p>
-                      <p className="mt-1 text-xs text-muted">
-                        {invite.team.tag} · {invite.team.region} · {invite.team.primaryRank}
-                      </p>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                        <span>
+                          {invite.team.tag} · {invite.team.region}
+                        </span>
+                        <RankBadge
+                          badgeLevel={invite.team.primaryRankBadgeLevel}
+                          rank={invite.team.primaryRank}
+                          size="sm"
+                        />
+                      </div>
                     </div>
                     <span className="rounded-full border border-success/30 bg-success/10 px-2 py-1 text-[11px] font-semibold text-success">
                       Invited
@@ -199,7 +218,7 @@ export function TeamInviteBell() {
 
             {!loading && inviteCount === 0 ? (
               <div className="rounded-lg border border-line bg-white/5 p-3 text-sm text-muted">
-                Accepted invites disappear here once you join the roster.
+                No pending team invites.
               </div>
             ) : null}
           </div>

@@ -8,6 +8,7 @@ import {
   canStoreTeamApplicationDeclinedAt,
   teamApplicationPendingData,
 } from "@/lib/team-applications";
+import { syncDeadlockRankForUser } from "@/lib/team-ranks";
 
 const applySchema = z.object({
   message: z.string().max(1000).optional(),
@@ -47,15 +48,16 @@ export async function POST(
     update: {
       profileName: user.profileName,
       avatarUrl: user.avatarUrl,
-      deadlockRank: user.deadlockRank,
     },
     create: {
       steamId: user.steamId,
       profileName: user.profileName,
       avatarUrl: user.avatarUrl,
       deadlockRank: user.deadlockRank,
+      deadlockRankBadgeLevel: user.deadlockRankBadgeLevel,
     },
   });
+  await syncDeadlockRankForUser(applicant);
   const currentMembership = await prisma.teamMembership.findFirst({
     where: { userId: applicant.id },
     include: {

@@ -5,11 +5,16 @@ import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
 import { REGION_OPTIONS } from "@/lib/regions";
+import {
+  createTeamInviteExpiry,
+  createTeamInviteToken,
+  getTeamInviteUrl,
+} from "@/lib/team-invites";
+import { syncDeadlockRankForUser } from "@/lib/team-ranks";
 
 const createTeamSchema = z.object({
   name: z.string().trim().min(2, "Team name must be at least 2 characters."),
   region: z.enum(REGION_OPTIONS, "Choose a valid region."),
-  rank: z.string().trim().min(2, "Primary rank must be at least 2 characters."),
   recruiting: z.boolean().default(false),
   openRoles: z.array(z.enum(RECRUITING_ROLE_OPTIONS)).default([]),
   description: z.string().trim().optional().default(""),
@@ -58,8 +63,12 @@ export async function POST(request: Request) {
   }
 
   const payload = parsedPayload.data;
+  const rankedOwner = await syncDeadlockRankForUser(owner);
 
   const slugBase = slugify(payload.name);
+  const inviteToken = createTeamInviteToken();
+  const inviteExpiresAt = createTeamInviteExpiry();
+  const primaryRank = rankedOwner.deadlockRank ?? "Unranked";
 
   const team = await prisma.team.create({
     data: {
@@ -67,7 +76,9 @@ export async function POST(request: Request) {
       name: payload.name,
       tag: createInternalTeamTag(slugBase),
       region: payload.region,
-      primaryRank: payload.rank,
+      primaryRank,
+      primaryRankBadgeLevel: rankedOwner.deadlockRankBadgeLevel,
+      primaryRankUpdatedAt: new Date(),
       focus: payload.recruiting
         ? "Recruiting high-level players for structured scrims and tournament preparation."
         : "Established high-level roster focused on scrims and tournament preparation.",
@@ -75,6 +86,8 @@ export async function POST(request: Request) {
       recruiting: payload.recruiting,
       openRoles: payload.recruiting ? Array.from(new Set(payload.openRoles)) : [],
       ownerId: owner.id,
+      inviteToken,
+      inviteExpiresAt,
       memberships: {
         create: {
           userId: owner.id,
@@ -88,6 +101,8 @@ export async function POST(request: Request) {
     message: "Team created successfully.",
     team: {
       slug: team.slug,
+      inviteLink: getTeamInviteUrl(inviteToken),
+      inviteExpiresAt: inviteExpiresAt.toISOString(),
     },
   });
 }

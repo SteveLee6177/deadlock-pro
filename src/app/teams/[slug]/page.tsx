@@ -2,12 +2,18 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { GuestAccessCard } from "@/components/access/guest-access-card";
+import { DiscordCopyButton } from "@/components/discord-copy-button";
+import { SteamIcon } from "@/components/icons/steam-icon";
 import { SiteHeader } from "@/components/navigation/site-header";
+import { RankBadge } from "@/components/rank-badge";
 import { ScheduleList } from "@/components/schedule-list";
+import { StatlockerProfileLink } from "@/components/statlocker-profile-link";
+import { TeamMemberKickButton } from "@/components/team-member-kick-button";
 import { TeamJoinForm } from "@/components/team-join-form";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { getTeamProfile } from "@/lib/platform-data";
+import { getSteamProfileUrl } from "@/lib/steam-profile";
 import type { TeamProfile } from "@/lib/types";
 
 type TeamPageProps = {
@@ -24,6 +30,10 @@ function asString(value: string | string[] | undefined) {
 
 function canApplyToTeam(team: TeamProfile) {
   return team.recruiting && team.currentUserCanApply !== false;
+}
+
+function canKickTeamMembers(role: string | undefined) {
+  return role === "OWNER" || role === "MANAGER";
 }
 
 export default async function TeamPage({ params, searchParams }: TeamPageProps) {
@@ -46,6 +56,7 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
   const canViewRosteredTeamProfile = Boolean(
     ownTeamMembership && profileSource === "my-team",
   );
+  const canKickMembers = canKickTeamMembers(ownTeamMembership?.role);
 
   if (memberships.length > 0 && !canViewRosteredTeamProfile) {
     redirect(memberships[0]?.team.slug ? `/teams?team=${memberships[0].team.slug}` : "/teams");
@@ -73,8 +84,12 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
               <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
                 {team.region}
               </span>
-              <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
-                {team.primaryRank}
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
+                <RankBadge
+                  badgeLevel={team.primaryRankBadgeLevel}
+                  rank={team.primaryRank}
+                  size="sm"
+                />
               </span>
               <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
                 {team.availability}
@@ -127,13 +142,51 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
             <div className="mt-6 space-y-4">
               {team.members.map((member) => (
                 <div key={member.id} className="rounded-lg border border-line bg-white/5 p-4">
-                  <p className="font-medium text-white">{member.profileName}</p>
-                  <p className="mt-1 text-sm text-muted">{member.role}</p>
-                  {member.deadlockRank ? (
-                    <p className="mt-3 text-xs uppercase tracking-[0.22em] text-accent-strong">
-                      {member.deadlockRank}
-                    </p>
-                  ) : null}
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-white">{member.profileName}</p>
+                      <p className="mt-1 text-sm text-muted">{member.role}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={getSteamProfileUrl(member.steamId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open ${member.profileName}'s Steam profile`}
+                        title="Open Steam profile"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                      >
+                        <SteamIcon className="h-4 w-4" />
+                      </a>
+                      <StatlockerProfileLink
+                        steamId={member.steamId}
+                        profileName={member.profileName}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                        iconClassName="h-4 w-4"
+                      />
+                      {member.discordUsername ? (
+                        <DiscordCopyButton
+                          profileName={member.profileName}
+                          username={member.discordUsername}
+                          size="sm"
+                        />
+                      ) : null}
+                      {canKickMembers && member.id !== user?.id && member.role !== "OWNER" ? (
+                        <TeamMemberKickButton
+                          memberName={member.profileName}
+                          slug={team.slug}
+                          userId={member.id}
+                        />
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <RankBadge
+                      badgeLevel={member.deadlockRankBadgeLevel}
+                      rank={member.deadlockRank}
+                      size="sm"
+                    />
+                  </div>
                 </div>
               ))}
             </div>

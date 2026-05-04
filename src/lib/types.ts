@@ -1,9 +1,11 @@
 export type SessionUser = {
   id: string;
   steamId: string;
+  discordUsername: string | null;
   profileName: string;
   avatarUrl: string | null;
   deadlockRank: string | null;
+  deadlockRankBadgeLevel: number | null;
 };
 
 export type TeamSummary = {
@@ -14,6 +16,7 @@ export type TeamSummary = {
   region: string;
   focus: string;
   primaryRank: string;
+  primaryRankBadgeLevel: number | null;
   description: string;
   recruiting: boolean;
   openRoles: string[];
@@ -35,15 +38,19 @@ export type ScrimTeamOption = UserTeamOption & {
   canManageScrims: boolean;
   region: string;
   primaryRank: string;
+  primaryRankBadgeLevel: number | null;
 };
 
 export type TeamProfile = TeamSummary & {
   members: Array<{
     id: string;
+    steamId: string;
+    discordUsername: string | null;
     profileName: string;
     role: string;
     avatarUrl: string | null;
     deadlockRank: string | null;
+    deadlockRankBadgeLevel: number | null;
   }>;
   upcomingSchedule: ScheduleFeedEvent[];
 };
@@ -51,8 +58,11 @@ export type TeamProfile = TeamSummary & {
 export type TeamApplicationSummary = {
   id: string;
   userId: string;
+  steamId: string;
+  discordUsername: string | null;
   profileName: string;
   deadlockRank: string | null;
+  deadlockRankBadgeLevel: number | null;
   message: string | null;
   status: string;
   createdAt: string;
@@ -69,6 +79,7 @@ export type PlayerApplicationSummary = {
     name: string;
     region: string;
     primaryRank: string;
+    primaryRankBadgeLevel: number | null;
     recruiting: boolean;
   };
 };
@@ -76,6 +87,10 @@ export type PlayerApplicationSummary = {
 export type UserTeamWorkspace = {
   userRole: string;
   team: TeamProfile;
+  invite: {
+    url: string | null;
+    expiresAt: string | null;
+  };
   applications: TeamApplicationSummary[];
   scrimRequests: OpenScrim[];
 };
@@ -101,6 +116,7 @@ export type ScrimAvailabilitySummary = {
   teamTag: string;
   region: string;
   rank: string;
+  rankBadgeLevel: number | null;
   startTime: string;
   endTime: string;
   notes: string | null;
@@ -115,11 +131,13 @@ export type ScrimRequestSummary = {
   requestingTeamSlug: string;
   requestingTeamRegion: string;
   requestingTeamRank: string;
+  requestingTeamRankBadgeLevel: number | null;
   receivingTeamId: string;
   receivingTeamName: string;
   receivingTeamSlug: string;
   receivingTeamRegion: string;
   receivingTeamRank: string;
+  receivingTeamRankBadgeLevel: number | null;
   startTime: string;
   endTime: string;
   message: string | null;

@@ -36,5 +36,5 @@ export function hasSteamWebApi() {
 }
 
 export function hasDeadlockApi() {
-  return Boolean(env.deadlockApiProfileUrlTemplate || env.deadlockApiBaseUrl);
+  return true;
 }

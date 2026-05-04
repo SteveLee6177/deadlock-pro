@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CalendarRange, MapPinned, MessageSquare, Shield, Swords } from "lucide-react";
 import { LocalScheduleRange } from "@/components/local-schedule-range";
+import { RankBadge } from "@/components/rank-badge";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
 import type {
   ScrimAvailabilitySummary,
@@ -114,7 +115,7 @@ export function AvailabilityBlockCard({
         </p>
         <p className="flex items-center gap-2">
           <Shield className="h-4 w-4 text-accent-strong" />
-          {block.rank}
+          <RankBadge badgeLevel={block.rankBadgeLevel} rank={block.rank} size="sm" />
         </p>
       </div>
       {block.notes ? <p className="mt-4 text-sm leading-6 text-slate-300">{block.notes}</p> : null}
@@ -147,6 +148,10 @@ export function RequestCard({
     direction === "incoming" ? request.requestingTeamRegion : request.receivingTeamRegion;
   const opponentRank =
     direction === "incoming" ? request.requestingTeamRank : request.receivingTeamRank;
+  const opponentRankBadgeLevel =
+    direction === "incoming"
+      ? request.requestingTeamRankBadgeLevel
+      : request.receivingTeamRankBadgeLevel;
 
   return (
     <article className="rounded-lg border border-line bg-white/5 p-5">
@@ -165,7 +170,9 @@ export function RequestCard({
           <LocalScheduleRange start={request.startTime} end={request.endTime} />
         </p>
         <p>{opponentRegion}</p>
-        <p>{opponentRank}</p>
+        <p>
+          <RankBadge badgeLevel={opponentRankBadgeLevel} rank={opponentRank} size="sm" />
+        </p>
       </div>
       {request.message ? (
         <p className="mt-4 flex gap-2 text-sm leading-6 text-slate-300">

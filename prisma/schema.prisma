@@ -69,12 +69,16 @@ enum BroadcastStatus {
 model User {
   id               String           @id @default(cuid())
   steamId          String           @unique
+  discordUsername  String?
   profileName      String
   avatarUrl        String?
   headline         String?
   region           String?
   deadlockRank     String?
   deadlockRankTier Int?
+  deadlockRankSubrank Int?
+  deadlockRankBadgeLevel Int?
+  deadlockRankFetchedAt DateTime?
   isLFT            Boolean          @default(false)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -96,10 +100,14 @@ model Team {
   region            String
   focus             String
   primaryRank       String
+  primaryRankBadgeLevel Int?
+  primaryRankUpdatedAt DateTime?
   description       String
   recruiting        Boolean           @default(true)
   openRoles         String[]
   ownerId           String
+  inviteToken       String?           @unique
+  inviteExpiresAt   DateTime?
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
   owner             User              @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)

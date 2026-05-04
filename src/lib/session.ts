@@ -3,12 +3,15 @@ import { cookies } from "next/headers";
 import { env } from "@/lib/env";
 
 export type DeadlockSession = {
+  authReturnTo?: string;
   user?: {
     id: string;
     steamId: string;
+    discordUsername: string | null;
     profileName: string;
     avatarUrl: string | null;
     deadlockRank: string | null;
+    deadlockRankBadgeLevel: number | null;
   };
 };
 

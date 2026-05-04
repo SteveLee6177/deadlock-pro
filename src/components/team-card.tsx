@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Flag, Radar, Send, Users } from "lucide-react";
+import { RankBadge } from "@/components/rank-badge";
 import type { TeamSummary } from "@/lib/types";
 
 function hasApplied(status: string | null | undefined) {
@@ -55,8 +56,8 @@ export function TeamCard({
           <h3 className="font-display text-2xl font-bold text-white">{team.name}</h3>
           <p className="mt-2 text-sm text-muted">{team.region}</p>
         </div>
-        <span className="rounded-full border border-success/30 bg-success/10 px-3 py-1 text-xs font-medium text-success">
-          {team.primaryRank}
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
+          <RankBadge badgeLevel={team.primaryRankBadgeLevel} rank={team.primaryRank} size="sm" />
         </span>
       </div>
 

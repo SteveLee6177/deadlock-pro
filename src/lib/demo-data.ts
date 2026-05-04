@@ -21,6 +21,7 @@ export const demoTeams: TeamSummary[] = [
     region: "NA",
     focus: "Structured scrim blocks, nightly review, and strict role accountability.",
     primaryRank: "Eternus 6",
+    primaryRankBadgeLevel: 116,
     description:
       "Seeking top-end players who can handle review pressure, defined practice blocks, and immediate tournament prep.",
     recruiting: true,
@@ -36,6 +37,7 @@ export const demoTeams: TeamSummary[] = [
     region: "NA",
     focus: "Tempo comps, pressure-heavy macro, and fast scrim turnaround.",
     primaryRank: "Eternus 5+",
+    primaryRankBadgeLevel: 115,
     description:
       "Midwest roster looking for high-output specialists with FACEIT reps, VOD discipline, and clean comms.",
     recruiting: true,
@@ -51,6 +53,7 @@ export const demoTeams: TeamSummary[] = [
     region: "EU",
     focus: "Execution-heavy playbooks, draft prep, and disciplined comms.",
     primaryRank: "Eternus 6",
+    primaryRankBadgeLevel: 116,
     description:
       "Closed tournament roster tuned for qualifiers, scrim accountability, and polished map prep.",
     recruiting: false,
@@ -66,17 +69,23 @@ export const demoTeamProfiles: Record<string, TeamProfile> = {
     members: [
       {
         id: "maya",
+        steamId: "76561198000000001",
+        discordUsername: "mayavoltage",
         profileName: "Maya Voltage",
         role: "Owner / IGL",
         avatarUrl: null,
         deadlockRank: "Eternus 6",
+        deadlockRankBadgeLevel: 116,
       },
       {
         id: "jordan",
+        steamId: "76561198000000002",
+        discordUsername: "jordanharbor",
         profileName: "Jordan Harbor",
         role: "Player",
         avatarUrl: null,
         deadlockRank: "Eternus 5",
+        deadlockRankBadgeLevel: 115,
       },
     ],
     upcomingSchedule: [
@@ -109,17 +118,23 @@ export const demoTeamProfiles: Record<string, TeamProfile> = {
     members: [
       {
         id: "jordan",
+        steamId: "76561198000000002",
+        discordUsername: "jordanharbor",
         profileName: "Jordan Harbor",
         role: "Owner",
         avatarUrl: null,
         deadlockRank: "Eternus 5",
+        deadlockRankBadgeLevel: 115,
       },
       {
         id: "neo",
+        steamId: "76561198000000004",
+        discordUsername: "neodrift",
         profileName: "Neo Drift",
         role: "Captain",
         avatarUrl: null,
         deadlockRank: "Eternus 5",
+        deadlockRankBadgeLevel: 115,
       },
     ],
     upcomingSchedule: [
@@ -141,10 +156,13 @@ export const demoTeamProfiles: Record<string, TeamProfile> = {
     members: [
       {
         id: "casey",
+        steamId: "76561198000000003",
+        discordUsername: "caseyreverb",
         profileName: "Casey Reverb",
         role: "Owner",
         avatarUrl: null,
         deadlockRank: "Eternus 6",
+        deadlockRankBadgeLevel: 116,
       },
     ],
     upcomingSchedule: [
@@ -248,9 +266,11 @@ export const demoDashboardData: DashboardData = {
   user: {
     id: "demo-user",
     steamId: "76561198000000001",
+    discordUsername: "mayavoltage",
     profileName: "Maya Voltage",
     avatarUrl: null,
     deadlockRank: "Eternus 6",
+    deadlockRankBadgeLevel: 116,
   },
   featuredTeams: demoTeams,
   openScrims: demoScrims,

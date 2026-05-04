@@ -16,6 +16,7 @@ const previewTeam: ScrimTeamOption = {
   canManageScrims: false,
   region: "NA",
   primaryRank: "Eternus 6",
+  primaryRankBadgeLevel: 116,
 };
 
 function makePreviewEvent(

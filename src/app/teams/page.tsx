@@ -9,16 +9,23 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { DiscordCopyButton } from "@/components/discord-copy-button";
+import { SteamIcon } from "@/components/icons/steam-icon";
 import { TeamDirectoryExplorer } from "@/components/team-directory-explorer";
+import { TeamInviteLinkPanel } from "@/components/team-invite-link-panel";
 import { TeamLeaveButton } from "@/components/team-leave-button";
+import { TeamMemberKickButton } from "@/components/team-member-kick-button";
 import { TeamApplicationActions } from "@/components/team-application-actions";
+import { RankBadge } from "@/components/rank-badge";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { ScheduleList } from "@/components/schedule-list";
+import { StatlockerProfileLink } from "@/components/statlocker-profile-link";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getCurrentUserTeamWorkspace,
   getTeamsDirectory,
 } from "@/lib/platform-data";
+import { getSteamProfileUrl } from "@/lib/steam-profile";
 import type {
   OpenScrim,
   ScheduleFeedEvent,
@@ -64,8 +71,12 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
           {workspace.team.region}
         </span>
-        <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
-          {workspace.team.primaryRank}
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
+          <RankBadge
+            badgeLevel={workspace.team.primaryRankBadgeLevel}
+            rank={workspace.team.primaryRank}
+            size="sm"
+          />
         </span>
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
           {workspace.userRole}
@@ -77,10 +88,12 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
 
 function TeamRoster({
   currentUserId,
+  canKickMembers = false,
   showPlayerLeaveAction = false,
   team,
 }: {
   currentUserId?: string | null;
+  canKickMembers?: boolean;
   showPlayerLeaveAction?: boolean;
   team: TeamProfile;
 }) {
@@ -102,10 +115,41 @@ function TeamRoster({
                 <p className="mt-1 text-sm text-muted">{roleLabel(member.role)}</p>
               </div>
               <div className="flex items-center gap-3">
-                {member.deadlockRank ? (
-                  <span className="rounded-full bg-success/15 px-3 py-1 text-xs text-success">
-                    {member.deadlockRank}
-                  </span>
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-success/15">
+                  <RankBadge
+                    badgeLevel={member.deadlockRankBadgeLevel}
+                    rank={member.deadlockRank}
+                    size="sm"
+                  />
+                </span>
+                <a
+                  href={getSteamProfileUrl(member.steamId)}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={`Open ${member.profileName}'s Steam profile`}
+                  title="Open Steam profile"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                >
+                  <SteamIcon className="h-4.5 w-4.5" />
+                </a>
+                <StatlockerProfileLink
+                  steamId={member.steamId}
+                  profileName={member.profileName}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                  iconClassName="h-4.5 w-4.5"
+                />
+                {member.discordUsername ? (
+                  <DiscordCopyButton
+                    profileName={member.profileName}
+                    username={member.discordUsername}
+                  />
+                ) : null}
+                {canKickMembers && member.id !== currentUserId && member.role !== "OWNER" ? (
+                  <TeamMemberKickButton
+                    memberName={member.profileName}
+                    slug={team.slug}
+                    userId={member.id}
+                  />
                 ) : null}
                 {showPlayerLeaveAction && member.id === currentUserId ? (
                   <TeamLeaveButton slug={team.slug} teamName={team.name} iconOnly />
@@ -141,7 +185,34 @@ function OwnerInvites({
             <div key={application.id} className="rounded-lg border border-line bg-white/5 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-medium text-white">{application.profileName}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium text-white">{application.profileName}</p>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={getSteamProfileUrl(application.steamId)}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`Open ${application.profileName}'s Steam profile`}
+                        title="Open Steam profile"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                      >
+                        <SteamIcon className="h-4 w-4" />
+                      </a>
+                      <StatlockerProfileLink
+                        steamId={application.steamId}
+                        profileName={application.profileName}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-line text-slate-100 transition hover:bg-white/6"
+                        iconClassName="h-4 w-4"
+                      />
+                      {application.discordUsername ? (
+                        <DiscordCopyButton
+                          profileName={application.profileName}
+                          username={application.discordUsername}
+                          size="sm"
+                        />
+                      ) : null}
+                    </div>
+                  </div>
                   <p className="mt-1 text-sm text-muted">
                     {format(new Date(application.createdAt), "MMM d, p")}
                   </p>
@@ -213,10 +284,12 @@ function OwnerScrimRequests({ scrims }: { scrims: OpenScrim[] }) {
 
 function OwnerSettings({
   currentUserId,
+  invite,
   role,
   team,
 }: {
   currentUserId: string | null;
+  invite: UserTeamWorkspace["invite"];
   role: string;
   team: TeamProfile;
 }) {
@@ -258,6 +331,20 @@ function OwnerSettings({
         </Link>
       </div>
       <div className="mt-6 border-t border-line pt-6">
+        <p className="eyebrow">Team Invite</p>
+        <h3 className="mt-2 font-display text-2xl font-bold text-white">24-hour roster link</h3>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          Share this link with players you want to add directly to the roster.
+        </p>
+        <div className="mt-5">
+          <TeamInviteLinkPanel
+            initialExpiresAt={invite.expiresAt}
+            initialUrl={invite.url}
+            slug={team.slug}
+          />
+        </div>
+      </div>
+      <div className="mt-6 border-t border-line pt-6">
         <p className="eyebrow">Team Control</p>
         <h3 className="mt-2 font-display text-2xl font-bold text-white">
           {role === "OWNER" ? "Leave or disband" : "Leave team"}
@@ -292,10 +379,19 @@ function OwnerDashboard({
     <>
       <DashboardHero workspace={workspace} />
       <div className="grid gap-6 xl:grid-cols-2">
-        <TeamRoster team={workspace.team} />
+        <TeamRoster
+          canKickMembers
+          currentUserId={currentUserId}
+          team={workspace.team}
+        />
         <OwnerInvites applications={workspace.applications} slug={workspace.team.slug} />
         <OwnerScrimRequests scrims={workspace.scrimRequests} />
-        <OwnerSettings currentUserId={currentUserId} role={workspace.userRole} team={workspace.team} />
+        <OwnerSettings
+          currentUserId={currentUserId}
+          invite={workspace.invite}
+          role={workspace.userRole}
+          team={workspace.team}
+        />
       </div>
     </>
   );
@@ -330,7 +426,11 @@ function MemberDashboard({
             {team.memberCount} members
           </span>
           <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
-            {team.primaryRank}
+            <RankBadge
+              badgeLevel={team.primaryRankBadgeLevel}
+              rank={team.primaryRank}
+              size="sm"
+            />
           </span>
         </div>
       </section>

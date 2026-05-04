@@ -3,6 +3,8 @@ import { ClipboardList, ShieldCheck, Users } from "lucide-react";
 import { GuestAccessCard } from "@/components/access/guest-access-card";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { PlayerApplicationActions } from "@/components/player-application-actions";
+import { ProfileIdentityPanel } from "@/components/profile-identity-panel";
+import { RankBadge } from "@/components/rank-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentUserApplications, getCurrentUserTeams } from "@/lib/platform-data";
 
@@ -46,22 +48,13 @@ export default async function ProfilePage() {
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
         {user ? (
           <>
-            <section className="surface-strong rounded-lg p-8 md:p-10">
-              <p className="eyebrow">Profile</p>
-              <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
-                {user.profileName}
-              </h1>
-              <div className="mt-6 flex flex-wrap gap-3 text-sm">
-                <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-                  Steam connected
-                </span>
-                {user.deadlockRank ? (
-                  <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
-                    {user.deadlockRank}
-                  </span>
-                ) : null}
-              </div>
-            </section>
+            <ProfileIdentityPanel
+              deadlockRank={user.deadlockRank}
+              deadlockRankBadgeLevel={user.deadlockRankBadgeLevel}
+              discordUsername={user.discordUsername}
+              profileName={user.profileName}
+              steamId={user.steamId}
+            />
 
             <section className="surface rounded-lg p-6">
               <div className="flex items-center gap-3">
@@ -86,10 +79,15 @@ export default async function ProfilePage() {
                       >
                         <div className="flex flex-wrap items-start justify-between gap-4">
                           <div>
-                            <p className="font-medium text-white">{application.team.name}</p>
-                            <p className="mt-1 text-sm text-muted">
-                              {application.team.region} · {application.team.primaryRank}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-white">{application.team.name}</p>
+                              <RankBadge
+                                badgeLevel={application.team.primaryRankBadgeLevel}
+                                rank={application.team.primaryRank}
+                                size="sm"
+                              />
+                            </div>
+                            <p className="mt-1 text-sm text-muted">{application.team.region}</p>
                           </div>
                           <span
                             className={`rounded-full border px-3 py-1 text-xs font-medium ${applicationStatusClassName(application.status)}`}

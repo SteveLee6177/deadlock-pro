@@ -3,6 +3,7 @@ import { canUseDatabase } from "@/lib/database";
 import { fetchDeadlockRank } from "@/lib/deadlock";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { recalculateTeamsForUser } from "@/lib/team-ranks";
 
 export const runtime = "nodejs";
 
@@ -20,16 +21,31 @@ export async function POST() {
   }
 
   session.user.deadlockRank = rank.rank;
+  session.user.deadlockRankBadgeLevel = rank.badgeLevel;
   await session.save();
 
   if (await canUseDatabase()) {
-    await prisma.user.updateMany({
+    const update = await prisma.user.updateMany({
       where: { steamId: session.user.steamId },
       data: {
         deadlockRank: rank.rank,
         deadlockRankTier: rank.tier,
+        deadlockRankSubrank: rank.subrank,
+        deadlockRankBadgeLevel: rank.badgeLevel,
+        deadlockRankFetchedAt: rank.fetchedAt,
       },
     });
+
+    if (update.count > 0) {
+      const user = await prisma.user.findUnique({
+        where: { steamId: session.user.steamId },
+        select: { id: true },
+      });
+
+      if (user) {
+        await recalculateTeamsForUser(user.id);
+      }
+    }
   }
 
   return NextResponse.json({ message: "Rank synced.", rank: rank.rank });

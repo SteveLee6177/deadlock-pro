@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { recalculateTeamRank } from "@/lib/team-ranks";
 
 const leaveTeamSchema = z.object({
   transferToUserId: z.string().min(1).optional(),
@@ -72,12 +73,30 @@ export async function DELETE(
         data: { role: "OWNER" },
       }),
       prisma.teamMembership.delete({ where: { id: membership.id } }),
+      prisma.teamApplication.deleteMany({
+        where: {
+          teamId: team.id,
+          userId: user.id,
+          status: "APPROVED",
+        },
+      }),
     ]);
+    await recalculateTeamRank(team.id);
 
     return NextResponse.json({ message: "Ownership transferred and you left the team." });
   }
 
-  await prisma.teamMembership.delete({ where: { id: membership.id } });
+  await prisma.$transaction([
+    prisma.teamMembership.delete({ where: { id: membership.id } }),
+    prisma.teamApplication.deleteMany({
+      where: {
+        teamId: team.id,
+        userId: user.id,
+        status: "APPROVED",
+      },
+    }),
+  ]);
+  await recalculateTeamRank(team.id);
 
   return NextResponse.json({ message: "You left the team." });
 }

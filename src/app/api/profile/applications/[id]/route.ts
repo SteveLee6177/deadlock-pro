@@ -4,6 +4,7 @@ import { canUseDatabase } from "@/lib/database";
 import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 import { teamApplicationDeclineData } from "@/lib/team-applications";
+import { recalculateTeamRank } from "@/lib/team-ranks";
 
 const playerApplicationActionSchema = z.object({
   action: z.enum(["accept", "decline"]),
@@ -68,6 +69,8 @@ export async function PATCH(
   });
 
   if (currentMembership?.teamId === application.teamId) {
+    await prisma.teamApplication.delete({ where: { id: application.id } });
+
     return NextResponse.json({ message: `You are already on ${application.team.name}.` });
   }
 
@@ -78,13 +81,17 @@ export async function PATCH(
     );
   }
 
-  await prisma.teamMembership.create({
-    data: {
-      teamId: application.teamId,
-      userId: user.id,
-      role: "PLAYER",
-    },
-  });
+  await prisma.$transaction([
+    prisma.teamMembership.create({
+      data: {
+        teamId: application.teamId,
+        userId: user.id,
+        role: "PLAYER",
+      },
+    }),
+    prisma.teamApplication.delete({ where: { id: application.id } }),
+  ]);
+  await recalculateTeamRank(application.teamId);
 
   return NextResponse.json({ message: `You joined ${application.team.name}.` });
 }

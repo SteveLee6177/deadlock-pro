@@ -10,6 +10,7 @@ import {
   canReapplyToDeclinedTeamApplication,
   canStoreTeamApplicationDeclinedAt,
 } from "@/lib/team-applications";
+import { getTeamInviteUrl, isActiveTeamInvite } from "@/lib/team-invites";
 import type {
   BroadcastCard,
   DashboardData,
@@ -44,6 +45,7 @@ function mapTeam(team: {
   region: string;
   focus: string;
   primaryRank: string;
+  primaryRankBadgeLevel: number | null;
   description: string;
   recruiting: boolean;
   openRoles: string[];
@@ -72,6 +74,7 @@ function mapTeam(team: {
     region: normalizeRegion(team.region),
     focus: team.focus,
     primaryRank: team.primaryRank,
+    primaryRankBadgeLevel: team.primaryRankBadgeLevel,
     description: team.description,
     recruiting: team.recruiting,
     openRoles: team.openRoles,
@@ -267,6 +270,7 @@ export async function getCurrentUserApplications(): Promise<PlayerApplicationSum
             name: true,
             region: true,
             primaryRank: true,
+            primaryRankBadgeLevel: true,
             recruiting: true,
           },
         },
@@ -323,8 +327,11 @@ export async function getCurrentUserTeamWorkspace(
             createdAt: true,
             user: {
               select: {
+                steamId: true,
+                discordUsername: true,
                 profileName: true,
                 deadlockRank: true,
+                deadlockRankBadgeLevel: true,
               },
             },
           },
@@ -362,8 +369,11 @@ export async function getCurrentUserTeamWorkspace(
     const applications: TeamApplicationSummary[] = team.applications.map((application) => ({
       id: application.id,
       userId: application.userId,
+      steamId: application.user.steamId,
+      discordUsername: application.user.discordUsername,
       profileName: application.user.profileName,
       deadlockRank: application.user.deadlockRank,
+      deadlockRankBadgeLevel: application.user.deadlockRankBadgeLevel,
       message: application.message,
       status: application.status,
       createdAt: application.createdAt.toISOString(),
@@ -371,14 +381,24 @@ export async function getCurrentUserTeamWorkspace(
 
     return {
       userRole: selectedMembership.role,
+      invite: {
+        url:
+          team.inviteToken && isActiveTeamInvite(team.inviteExpiresAt)
+            ? getTeamInviteUrl(team.inviteToken)
+            : null,
+        expiresAt: team.inviteExpiresAt?.toISOString() ?? null,
+      },
       team: {
         ...mapTeam(team),
         members: team.memberships.map((membership) => ({
           id: membership.user.id,
+          steamId: membership.user.steamId,
+          discordUsername: membership.user.discordUsername,
           profileName: membership.user.profileName,
           role: membership.role,
           avatarUrl: membership.user.avatarUrl,
           deadlockRank: membership.user.deadlockRank,
+          deadlockRankBadgeLevel: membership.user.deadlockRankBadgeLevel,
         })),
         upcomingSchedule: team.scheduleEvents.map(mapScheduleEvent),
       },
@@ -437,10 +457,13 @@ export async function getTeamProfile(slug: string): Promise<TeamProfile | null> 
         ...mapTeam(team),
         members: team.memberships.map((membership) => ({
           id: membership.user.id,
+          steamId: membership.user.steamId,
+          discordUsername: membership.user.discordUsername,
           profileName: membership.user.profileName,
           role: membership.role,
           avatarUrl: membership.user.avatarUrl,
           deadlockRank: membership.user.deadlockRank,
+          deadlockRankBadgeLevel: membership.user.deadlockRankBadgeLevel,
         })),
         upcomingSchedule: team.scheduleEvents.map(mapScheduleEvent),
       };

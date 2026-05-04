@@ -48,7 +48,11 @@ export default async function CreateTeamPage() {
           />
         ) : user ? (
           <div className="max-w-3xl">
-            <CreateTeamForm disabled={false} />
+            <CreateTeamForm
+              disabled={false}
+              playerRank={user.deadlockRank}
+              playerRankBadgeLevel={user.deadlockRankBadgeLevel}
+            />
           </div>
         ) : (
           <GuestAccessCard

@@ -51,6 +51,7 @@ export function TeamLeaveButton({
       });
 
       if (response.ok) {
+        window.dispatchEvent(new Event("team-memberships-changed"));
         router.push("/teams");
         router.refresh();
         return;

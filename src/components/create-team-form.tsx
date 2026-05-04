@@ -3,34 +3,37 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Copy, Plus, ShieldCheck, UserPlus, X } from "lucide-react";
+import { RankBadge } from "@/components/rank-badge";
 import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
 import { REGION_OPTIONS } from "@/lib/regions";
 import { cn } from "@/lib/utils";
-
-function getPlaceholderInviteLink(slug: string) {
-  return `https://scrimlock.gg/invite/${slug}-24h`;
-}
 
 function uniqueRoles(roles: string[]) {
   return Array.from(new Set(roles));
 }
 
-export function CreateTeamForm({ disabled }: { disabled: boolean }) {
+export function CreateTeamForm({
+  disabled,
+  playerRank,
+  playerRankBadgeLevel,
+}: {
+  disabled: boolean;
+  playerRank: string | null;
+  playerRankBadgeLevel: number | null;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [createdTeamSlug, setCreatedTeamSlug] = useState<string | null>(null);
-  const [discordLink, setDiscordLink] = useState("");
+  const [inviteLink, setInviteLink] = useState("");
   const [form, setForm] = useState({
     name: "",
     region: "NA",
-    rank: "Eternus 6",
     recruiting: false,
     openRoles: [] as string[],
     description: "",
   });
-  const inviteLink = createdTeamSlug ? getPlaceholderInviteLink(createdTeamSlug) : "";
 
   function openCreatedTeam() {
     if (createdTeamSlug) {
@@ -58,11 +61,17 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
               });
 
               const body = await response.text();
-              let payload: { message?: string; team?: { slug?: string } } = {};
+              let payload: {
+                message?: string;
+                team?: { inviteLink?: string; slug?: string };
+              } = {};
 
               if (body) {
                 try {
-                  payload = JSON.parse(body) as { message?: string; team?: { slug?: string } };
+                  payload = JSON.parse(body) as {
+                    message?: string;
+                    team?: { inviteLink?: string; slug?: string };
+                  };
                 } catch {
                   payload = {};
                 }
@@ -76,16 +85,15 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
                 setForm({
                   name: "",
                   region: "NA",
-                  rank: "Eternus 6",
                   recruiting: false,
                   openRoles: [],
                   description: "",
                 });
-                setDiscordLink("");
                 setCopiedInvite(false);
 
                 if (payload.team?.slug) {
                   setCreatedTeamSlug(payload.team.slug);
+                  setInviteLink(payload.team.inviteLink ?? "");
                 } else {
                   router.refresh();
                 }
@@ -125,15 +133,12 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
             </option>
           ))}
         </select>
-        <input
-          value={form.rank}
-          onChange={(event) => setForm((current) => ({ ...current, rank: event.target.value }))}
-          placeholder="Primary rank"
-          className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white outline-none focus:border-accent"
-          disabled={disabled || isPending}
-          required
-          minLength={2}
-        />
+        <div className="rounded-lg border border-line bg-white/5 px-4 py-3 text-sm text-white">
+          <p className="text-xs uppercase tracking-[0.22em] text-muted">Deadlock rank</p>
+          <div className="mt-1">
+            <RankBadge badgeLevel={playerRankBadgeLevel} rank={playerRank} size="sm" />
+          </div>
+        </div>
       </div>
 
       <div className="mt-5">
@@ -249,9 +254,7 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
                 <h2 className="mt-2 font-display text-3xl font-bold text-white">
                   Invite your teammates
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-muted">
-                  Copy and paste this in Discord. Link lasts for 24 hours.
-                </p>
+                <p className="mt-2 text-sm leading-6 text-muted">Link lasts for 24 hours.</p>
               </div>
               <button
                 type="button"
@@ -285,12 +288,6 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
                 </button>
               </div>
 
-              <input
-                value={discordLink}
-                onChange={(event) => setDiscordLink(event.target.value)}
-                placeholder="Optional: Discord server or team channel link"
-                className="h-11 rounded-lg border border-line bg-white/5 px-3 text-sm text-white outline-none focus:border-accent"
-              />
             </div>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
@@ -300,16 +297,6 @@ export function CreateTeamForm({ disabled }: { disabled: boolean }) {
                 className="inline-flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
               >
                 Open team dashboard
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreatedTeamSlug(null);
-                  router.refresh();
-                }}
-                className="inline-flex h-10 items-center rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
-              >
-                Stay here
               </button>
             </div>
           </div>

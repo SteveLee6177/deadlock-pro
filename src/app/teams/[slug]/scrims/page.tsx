@@ -17,6 +17,7 @@ import {
 } from "@/components/scrims/scrim-summary-cards";
 import { ScrimChatButton } from "@/components/scrims/scrim-chat-button";
 import { SiteHeader } from "@/components/navigation/site-header";
+import { RankBadge } from "@/components/rank-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentScrimTeams, getTeamScrimPage } from "@/lib/scrim-data";
 
@@ -65,8 +66,12 @@ export default async function TeamScrimsPage({
                 <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
                   {pageData.team.region}
                 </span>
-                <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
-                  {pageData.team.primaryRank}
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
+                  <RankBadge
+                    badgeLevel={pageData.team.primaryRankBadgeLevel}
+                    rank={pageData.team.primaryRank}
+                    size="sm"
+                  />
                 </span>
                 {pageData.role ? (
                   <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
