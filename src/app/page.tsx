@@ -8,10 +8,10 @@ import { getDashboardData } from "@/lib/platform-data";
 import type { ScrimCalendarEvent, ScrimTeamOption } from "@/lib/types";
 
 const previewTeam: ScrimTeamOption = {
-  id: "preview-team-sanguine",
-  slug: "sanguine",
-  name: "Sanguine",
-  tag: "SGN",
+  id: "preview-team",
+  slug: "your-team",
+  name: "Your team",
+  tag: "TEAM",
   role: "OWNER",
   canManageScrims: false,
   region: "NA",
@@ -54,20 +54,20 @@ function getPreviewCalendarEvents(): ScrimCalendarEvent[] {
       opponentName: null,
     }),
     makePreviewEvent(weekStart, 2, 20, 2, {
-      id: "preview-scrim-harbor",
+      id: "preview-scrim",
       kind: "scrim",
-      title: "Scrim vs Harbor Nine",
+      title: "Confirmed scrim",
       status: "CONFIRMED",
       notes: "Two-map set with VOD review after.",
-      opponentName: "Harbor Nine",
+      opponentName: "Opponent team",
     }),
     makePreviewEvent(weekStart, 3, 21, 1, {
-      id: "preview-request-glasshouse",
+      id: "preview-request",
       kind: "request",
-      title: "Pending vs Glasshouse",
+      title: "Pending request",
       status: "PENDING",
-      notes: "EU team asking for a late block.",
-      opponentName: "Glasshouse",
+      notes: "Another team asking for a late block.",
+      opponentName: "Requesting team",
     }),
     makePreviewEvent(weekStart, 4, 19, 1, {
       id: "preview-lfs-thursday",
@@ -78,12 +78,12 @@ function getPreviewCalendarEvents(): ScrimCalendarEvent[] {
       opponentName: null,
     }),
     makePreviewEvent(weekStart, 5, 22, 2, {
-      id: "preview-scrim-chronoshift",
+      id: "preview-scrim-friday",
       kind: "scrim",
-      title: "Scrim vs Chronoshift",
+      title: "Confirmed scrim",
       status: "CONFIRMED",
       notes: "Qualifier prep block.",
-      opponentName: "Chronoshift",
+      opponentName: "Opponent team",
     }),
   ];
 }
@@ -154,7 +154,7 @@ export default async function HomePage() {
                   </h2>
                 </div>
                 <p className="max-w-xl text-sm leading-6 text-muted">
-                  Example data only: a team owner can post LFS blocks, review pending requests,
+                  Preview only: a team owner can post LFS blocks, review pending requests,
                   and see confirmed scrims in one weekly view.
                 </p>
               </div>

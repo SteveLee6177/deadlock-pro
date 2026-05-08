@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { LogOut } from "lucide-react";
 import { DiscordCopyButton } from "@/components/discord-copy-button";
 import { DiscordProfileForm } from "@/components/discord-profile-form";
 import { SteamIcon } from "@/components/icons/steam-icon";
@@ -54,6 +55,12 @@ export function ProfileIdentityPanel({
           <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
             <RankBadge badgeLevel={deadlockRankBadgeLevel} rank={deadlockRank} size="sm" />
           </span>
+          <form action="/api/auth/signout" method="post">
+            <button className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-white/5 px-4 text-sm font-medium text-slate-100 transition hover:border-accent/40 hover:bg-white/8">
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </button>
+          </form>
         </div>
       </section>
 

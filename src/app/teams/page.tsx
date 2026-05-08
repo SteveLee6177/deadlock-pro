@@ -59,14 +59,10 @@ function roleLabel(role: string) {
 function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
   return (
     <section className="surface-strong rounded-lg p-8 md:p-10">
-      <p className="eyebrow">Team Dashboard</p>
+      <p className="eyebrow">My Team</p>
       <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
-        Manage {workspace.team.name}.
+        {workspace.team.name}
       </h1>
-      <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">
-        Review player applications, roster status, scrim blocks, and recruiting posture from one
-        team view.
-      </p>
       <div className="mt-8 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
           {workspace.team.region}

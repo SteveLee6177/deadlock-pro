@@ -80,22 +80,18 @@ export function TeamCard({
         </div>
       </div>
 
-      <div className="mt-6 flex flex-wrap gap-2">
-        {team.openRoles.length > 0 ? (
-          team.openRoles.map((role) => (
+      {team.openRoles.length > 0 ? (
+        <div className="mt-6 flex flex-wrap gap-2">
+          {team.openRoles.map((role) => (
             <span
               key={role}
               className="rounded-md border border-line bg-white/5 px-3 py-1 text-xs text-slate-100"
             >
               {role}
             </span>
-          ))
-        ) : (
-          <span className="rounded-md border border-line bg-white/5 px-3 py-1 text-xs text-muted">
-            Closed roster
-          </span>
-        )}
-      </div>
+          ))}
+        </div>
+      ) : null}
 
       <div className="mt-6 flex flex-wrap items-center gap-4">
         {showApplyButton ? (

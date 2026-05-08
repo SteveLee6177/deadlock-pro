@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserCircle, UserPlus, Users } from "lucide-react";
+import { ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FocusEvent } from "react";
 import { TeamInviteBell } from "@/components/navigation/team-invite-bell";
@@ -12,7 +12,6 @@ import type { SessionUser, UserTeamOption } from "@/lib/types";
 const navItems = [
   { href: "/scrims/calendar", label: "Scrims", icon: Swords },
   { href: "/tournaments", label: "Tournaments", icon: Trophy },
-  { href: "/profile", label: "Profile", icon: UserCircle },
 ];
 
 const RECRUITING_MANAGER_ROLES = new Set(["OWNER", "MANAGER", "CAPTAIN"]);
@@ -153,8 +152,6 @@ function TeamsNavMenu({ user }: { user: SessionUser | null }) {
 }
 
 export function SiteHeader({ user }: { user: SessionUser | null }) {
-  const visibleNavItems = user ? navItems : navItems.filter((item) => item.href !== "/profile");
-
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-[#07131e]/85 backdrop-blur-xl">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-4 py-4 sm:px-6 lg:px-8">
@@ -172,7 +169,7 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
 
         <nav className="hidden items-center gap-2 lg:flex">
           <TeamsNavMenu user={user} />
-          {visibleNavItems.map(({ href, label, icon: Icon }) => (
+          {navItems.map(({ href, label, icon: Icon }) => (
             <Link
               key={href}
               href={href}
@@ -188,22 +185,24 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
           {user ? (
             <>
               <TeamInviteBell />
-              <div className="hidden rounded-full border border-line bg-white/4 px-4 py-2 text-sm md:block">
-                <span className="text-muted">Signed in as </span>
-                <span className="font-medium">{user.profileName}</span>
-                <span className="ml-2 inline-flex h-7 w-7 items-center justify-center rounded-full bg-success/15 align-middle">
+              <Link
+                href="/profile"
+                aria-label={`Open ${user.profileName}'s profile`}
+                title={`Open profile for ${user.profileName}`}
+                className="hidden shrink-0 items-center gap-2 rounded-full border border-line bg-white/4 px-4 py-2 text-sm transition hover:border-accent/40 hover:bg-white/6 focus:outline-none focus:ring-2 focus:ring-accent/50 md:flex"
+              >
+                <span className="whitespace-nowrap text-slate-100">
+                  <span className="text-muted">Signed in as </span>
+                  <span className="font-semibold text-white">{user.profileName}</span>
+                </span>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-success/20 bg-success/15">
                   <RankBadge
                     badgeLevel={user.deadlockRankBadgeLevel}
                     rank={user.deadlockRank}
                     size="sm"
                   />
                 </span>
-              </div>
-              <form action="/api/auth/signout" method="post">
-                <button className="rounded-full border border-line px-4 py-2 text-sm font-medium transition hover:bg-white/6">
-                  Sign out
-                </button>
-              </form>
+              </Link>
             </>
           ) : (
             <Link

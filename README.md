@@ -49,7 +49,7 @@ npm run db:generate
 npm run db:push
 ```
 
-6. Seed demo data if you want a populated dev environment:
+6. Run the seed command if your deployment workflow expects it. It does not create demo teams:
 
 ```bash
 npm run db:seed
@@ -84,13 +84,13 @@ See [.env.example](/Users/splee/Documents/New project/.env.example) for the full
 - [src/components](/Users/splee/Documents/New project/src/components): UI building blocks and client widgets
 - [src/lib](/Users/splee/Documents/New project/src/lib): auth, data access, Redis, Prisma, and Deadlock utilities
 - [prisma/schema.prisma](/Users/splee/Documents/New project/prisma/schema.prisma): database schema
-- [prisma/seed.ts](/Users/splee/Documents/New project/prisma/seed.ts): starter data
+- [prisma/seed.ts](/Users/splee/Documents/New project/prisma/seed.ts): production-safe no-op seed
 
 ## Notes
 
 - Steam login is implemented with OpenID because Steam does not expose standard OAuth for web sign-in.
 - The Deadlock rank sync is intentionally adapter-based because different community APIs expose slightly different response shapes.
-- Read paths fall back to demo content when `DATABASE_URL` is missing so the UI still renders during setup.
+- Read paths return empty production-safe states when `DATABASE_URL` is missing.
 - Mutations require Postgres so forms return a helpful message until the database is configured.
 - Local Postgres and Redis are defined in [docker-compose.yml](/Users/splee/Documents/New project/docker-compose.yml) and can be stopped with `npm run infra:down`.
 - Scrim posting and schedule writes are limited to teams the signed-in user actually belongs to.
