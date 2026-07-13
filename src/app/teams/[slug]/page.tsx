@@ -10,10 +10,13 @@ import { ScheduleList } from "@/components/schedule-list";
 import { StatlockerProfileLink } from "@/components/statlocker-profile-link";
 import { TeamMemberKickButton } from "@/components/team-member-kick-button";
 import { TeamJoinForm } from "@/components/team-join-form";
+import { TeamRegionForm } from "@/components/team-region-form";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { getTeamProfile } from "@/lib/platform-data";
+import { isScrimManagerRole } from "@/lib/scrim-permissions";
 import { getSteamProfileUrl } from "@/lib/steam-profile";
+import { formatTeamRole } from "@/lib/team-roles";
 import type { TeamProfile } from "@/lib/types";
 
 type TeamPageProps = {
@@ -29,7 +32,7 @@ function asString(value: string | string[] | undefined) {
 }
 
 function canApplyToTeam(team: TeamProfile) {
-  return team.recruiting && team.currentUserCanApply !== false;
+  return team.recruiting && team.currentUserCanApply !== false && !team.currentUserIsMember;
 }
 
 function canKickTeamMembers(role: string | undefined) {
@@ -57,9 +60,10 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
     ownTeamMembership && profileSource === "my-team",
   );
   const canKickMembers = canKickTeamMembers(ownTeamMembership?.role);
+  const canManageTeamSettings = isScrimManagerRole(ownTeamMembership?.role);
 
-  if (memberships.length > 0 && !canViewRosteredTeamProfile) {
-    redirect(memberships[0]?.team.slug ? `/teams?team=${memberships[0].team.slug}` : "/teams");
+  if (ownTeamMembership && !canViewRosteredTeamProfile) {
+    redirect(`/teams?team=${ownTeamMembership.team.slug}`);
   }
 
   const backHref = canViewRosteredTeamProfile ? `/teams?team=${team.slug}` : "/teams";
@@ -82,7 +86,7 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
             </h1>
             <div className="mt-5 flex flex-wrap gap-3 text-sm">
               <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-                {team.region}
+                Region {team.region}
               </span>
               <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
                 <RankBadge
@@ -99,6 +103,12 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
               <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">{team.description}</p>
             ) : null}
             <p className="mt-4 max-w-3xl text-sm leading-7 text-muted">{team.focus}</p>
+
+            {canManageTeamSettings ? (
+              <div className="mt-6 max-w-xl">
+                <TeamRegionForm currentRegion={team.region} slug={team.slug} />
+              </div>
+            ) : null}
 
             <div className="mt-8 flex flex-wrap gap-2">
               {team.openRoles.length > 0 ? (
@@ -130,7 +140,7 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
                   : "Roster standards stay visible for guests, but applying requires a signed-in Steam identity."
               }
               ctaHref={user ? "#roster" : "/sign-in"}
-              ctaLabel={user ? "View roster" : "Sign in with Steam"}
+              ctaLabel={user ? "View Roster" : "Sign in with Steam"}
             />
           )}
         </section>
@@ -145,7 +155,7 @@ export default async function TeamPage({ params, searchParams }: TeamPageProps) 
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-medium text-white">{member.profileName}</p>
-                      <p className="mt-1 text-sm text-muted">{member.role}</p>
+                      <p className="mt-1 text-sm text-muted">{formatTeamRole(member.role)}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <a

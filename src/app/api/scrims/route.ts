@@ -4,6 +4,7 @@ import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 import { REGION_OPTIONS } from "@/lib/regions";
+import { parseDateInput, readJsonBody } from "@/lib/request";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const scrimSchema = z.object({
@@ -29,10 +30,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Sign in with Steam first." }, { status: 401 });
   }
 
-  const payload = scrimSchema.parse(await request.json());
+  const parsed = scrimSchema.safeParse(await readJsonBody(request));
+
+  if (!parsed.success) {
+    return NextResponse.json(
+      { message: "Check the scrim details and try again." },
+      { status: 400 },
+    );
+  }
+
+  const payload = parsed.data;
+  const startsAt = parseDateInput(payload.startsAt);
+
+  if (!startsAt) {
+    return NextResponse.json({ message: "Use a valid scrim start time." }, { status: 400 });
+  }
+
   if (!(await canManageTeamScrims(membershipData.user.id, payload.requesterTeamId))) {
     return NextResponse.json(
-      { message: "Only team owners/managers can post official scrims." },
+      { message: "Only team captains/managers can post official scrims." },
       { status: 403 },
     );
   }
@@ -41,7 +57,7 @@ export async function POST(request: Request) {
     data: {
       requesterTeamId: payload.requesterTeamId,
       createdById: membershipData.user.id,
-      startsAt: new Date(payload.startsAt),
+      startsAt,
       region: payload.region,
       format: payload.format,
       wantedRank: payload.wantedRank,

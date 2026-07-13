@@ -1,6 +1,7 @@
-import { ArrowRight, Lock, ShieldCheck } from "lucide-react";
+import { ArrowRight, FlaskConical, Lock, ShieldCheck } from "lucide-react";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { getCurrentUser } from "@/lib/auth";
+import { LOCAL_TEST_AUTH_ENABLED, localTestAccounts } from "@/lib/local-test-data";
 import { safeReturnPath } from "@/lib/team-invites";
 
 export default async function SignInPage({
@@ -26,11 +27,11 @@ export default async function SignInPage({
         <section className="surface-strong rounded-lg p-8 md:p-10">
           <p className="eyebrow">Steam Login</p>
           <h1 className="mt-4 font-display text-5xl font-bold tracking-tight text-white">
-            Verify Steam, then attach your Deadlock rank.
+            Login with Steam, then attach your Deadlock rank.
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
             Scrimlock uses Steam OpenID for sign-in. Once the Steam identity is verified,
-            team owners and managers can evaluate applications with a rank signal tied to a real
+            team captains and managers can evaluate applications with a rank signal tied to a real
             Steam profile.
           </p>
 
@@ -38,9 +39,45 @@ export default async function SignInPage({
             href={steamHref}
             className="mt-8 inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
           >
-            Verify with Steam
+            Login with Steam
             <ArrowRight className="h-4 w-4" />
           </a>
+
+          {LOCAL_TEST_AUTH_ENABLED ? (
+            <div className="mt-8 rounded-lg border border-line bg-white/5 p-5">
+              <div className="flex items-center gap-3">
+                <FlaskConical className="h-5 w-5 text-accent-strong" />
+                <div>
+                  <p className="eyebrow">Local Test Access</p>
+                  <h2 className="mt-1 font-display text-2xl font-bold text-white">
+                    Use a seeded captain account
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 flex flex-wrap gap-3">
+                {localTestAccounts.map((account) => {
+                  const href = new URLSearchParams({
+                    steamId: account.steamId,
+                  });
+
+                  if (returnTo) {
+                    href.set("returnTo", returnTo);
+                  }
+
+                  return (
+                    <a
+                      key={account.steamId}
+                      href={`/api/auth/test?${href.toString()}`}
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full border border-line px-4 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/6"
+                    >
+                      {account.profileName}
+                      <span className="text-muted">({account.teamName})</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <section className="grid gap-6">

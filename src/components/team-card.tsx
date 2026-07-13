@@ -30,7 +30,10 @@ export function TeamCard({
   const [isPending, startTransition] = useTransition();
   const applied = hasApplied(applicationStatus);
   const showApplyButton =
-    showQuickApply && team.recruiting && team.currentUserCanApply !== false;
+    showQuickApply &&
+    team.recruiting &&
+    team.currentUserCanApply !== false &&
+    !team.currentUserIsMember;
 
   function applyToTeam() {
     startTransition(async () => {
@@ -52,9 +55,9 @@ export function TeamCard({
   return (
     <article className="surface rounded-lg p-6 transition hover:-translate-y-1 hover:border-accent/40">
       <div className="flex items-start justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h3 className="font-display text-2xl font-bold text-white">{team.name}</h3>
-          <p className="mt-2 text-sm text-muted">{team.region}</p>
+          <p className="mt-2 text-sm text-muted">Region {team.region}</p>
         </div>
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
           <RankBadge badgeLevel={team.primaryRankBadgeLevel} rank={team.primaryRank} size="sm" />
@@ -66,15 +69,15 @@ export function TeamCard({
       ) : null}
 
       <div className="mt-6 grid gap-3 text-sm text-muted sm:grid-cols-2">
-        <div className="flex items-center gap-2">
+        <div className="flex min-h-6 items-center gap-2">
           <Users className="h-4 w-4 text-accent-strong" />
           {team.memberCount} members
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex min-h-6 items-center gap-2">
           <Flag className="h-4 w-4 text-accent-strong" />
           {team.availability}
         </div>
-        <div className="flex items-center gap-2 sm:col-span-2">
+        <div className="flex min-h-6 items-center gap-2 sm:col-span-2">
           <Radar className="h-4 w-4 text-accent-strong" />
           {team.focus}
         </div>
@@ -108,9 +111,9 @@ export function TeamCard({
         {canViewProfile ? (
           <Link
             href={`/teams/${team.slug}`}
-            className="inline-flex items-center gap-2 text-sm font-medium text-accent-strong transition hover:text-white"
+            className="inline-flex items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
           >
-            View roster
+            View Roster
             <ArrowUpRight className="h-4 w-4" />
           </Link>
         ) : null}

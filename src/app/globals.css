@@ -119,3 +119,42 @@ textarea {
 .calendar-day-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 179, 71, 0.95);
 }
+
+.scrim-week-slide-next {
+  animation: scrim-week-slide-next 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.scrim-week-slide-previous {
+  animation: scrim-week-slide-previous 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes scrim-week-slide-next {
+  from {
+    opacity: 0.72;
+    transform: translateX(80%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scrim-week-slide-previous {
+  from {
+    opacity: 0.72;
+    transform: translateX(-80%);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scrim-week-slide-next,
+  .scrim-week-slide-previous {
+    animation: none;
+  }
+}

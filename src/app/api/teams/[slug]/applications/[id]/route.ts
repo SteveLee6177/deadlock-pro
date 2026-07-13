@@ -60,7 +60,7 @@ export async function PATCH(
   }
 
   if (!canManageApplications(team.memberships[0]?.role)) {
-    return NextResponse.json({ message: "Only team owners and managers can manage applications." }, { status: 403 });
+    return NextResponse.json({ message: "Only team captains and managers can manage applications." }, { status: 403 });
   }
 
   const application = await prisma.teamApplication.findFirst({

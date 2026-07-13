@@ -420,8 +420,47 @@ export async function createScrimMessage({
     },
     select: MESSAGE_SELECT,
   });
+  const notifiedTeamIds = context.teamIds.filter((teamId) => teamId !== selectedTeamId);
+
+  if (notifiedTeamIds.length > 0) {
+    const managers = await prisma.teamMembership.findMany({
+      where: {
+        teamId: { in: notifiedTeamIds },
+        role: { in: ["OWNER", "MANAGER", "CAPTAIN"] },
+        userId: { not: userId },
+      },
+      select: { userId: true },
+    });
+    const uniqueUserIds = [...new Set(managers.map((manager) => manager.userId))];
+
+    if (uniqueUserIds.length > 0) {
+      const senderTeam = context.teams.find((team) => team.id === selectedTeamId);
+
+      await prisma.notification.createMany({
+        data: uniqueUserIds.map((recipientUserId) => ({
+          userId: recipientUserId,
+          type: "SCRIM_CHAT",
+          title: "New scrim chat message",
+          body: `${senderTeam?.name ?? "A team"} sent a message in ${context.title}.`,
+          relatedEntityId: conversationId,
+        })),
+      });
+    }
+  }
 
   return mapMessage(message);
+}
+
+export async function markConversationChatNotificationsRead(conversationId: string, userId: string) {
+  await prisma.notification.updateMany({
+    where: {
+      userId,
+      type: "SCRIM_CHAT",
+      relatedEntityId: conversationId,
+      readAt: null,
+    },
+    data: { readAt: new Date() },
+  });
 }
 
 export async function listConversationMessages({

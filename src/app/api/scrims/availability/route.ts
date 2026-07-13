@@ -4,6 +4,7 @@ import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 import { REGION_OPTIONS } from "@/lib/regions";
+import { readJsonBody } from "@/lib/request";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 import { parseAbsoluteDateTime } from "@/lib/time-zone";
 
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
     return jsonError("Sign in with Steam first.", 401);
   }
 
-  const parsed = availabilitySchema.safeParse(await request.json());
+  const parsed = availabilitySchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Check the availability details and try again.", 400);
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   }
 
   if (!(await canManageTeamScrims(membershipData.user.id, parsed.data.teamId))) {
-    return jsonError("Only team owners/managers can create official availability.", 403);
+    return jsonError("Only team captains/managers can create official availability.", 403);
   }
 
   if (await hasConfirmedOverlap(parsed.data.teamId, startTime, endTime)) {

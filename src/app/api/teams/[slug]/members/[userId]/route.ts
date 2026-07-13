@@ -62,7 +62,7 @@ export async function PATCH(
   }
 
   if (!canManageTrials(team.memberships[0]?.role)) {
-    return NextResponse.json({ message: "Only team owners and managers can manage trial players." }, { status: 403 });
+    return NextResponse.json({ message: "Only team captains and managers can manage trial players." }, { status: 403 });
   }
 
   const trialMembership = await prisma.teamMembership.findUnique({
@@ -90,7 +90,7 @@ export async function PATCH(
     }
 
     if (!canRemoveMember(team.memberships[0]?.role, trialMembership.role)) {
-      return NextResponse.json({ message: "Team owners cannot be kicked." }, { status: 403 });
+      return NextResponse.json({ message: "Team captains cannot be kicked." }, { status: 403 });
     }
 
     if (trialMembership.role === "TRIAL") {

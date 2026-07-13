@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import {
+  markConversationChatNotificationsRead,
   resolveRequestConversation,
   resolveScrimConversation,
 } from "@/lib/scrim-chat";
@@ -38,12 +39,14 @@ export async function GET(request: Request) {
     : await resolveScrimConversation(scrimId!, membershipData.user.id);
 
   if (conversation === "FORBIDDEN") {
-    return jsonError("Only either team's owners/managers can use this scrim chat.", 403);
+    return jsonError("Only either team's captains/managers can use this scrim chat.", 403);
   }
 
   if (!conversation) {
     return jsonError("Scrim chat not found.", 404);
   }
+
+  await markConversationChatNotificationsRead(conversation.id, membershipData.user.id);
 
   return NextResponse.json(conversation);
 }

@@ -7,6 +7,7 @@ import { ProfileIdentityPanel } from "@/components/profile-identity-panel";
 import { RankBadge } from "@/components/rank-badge";
 import { getCurrentUser } from "@/lib/auth";
 import { getCurrentUserApplications, getCurrentUserTeams } from "@/lib/platform-data";
+import { formatTeamRole } from "@/lib/team-roles";
 
 function applicationStatusLabel(status: string) {
   if (status === "APPROVED") {
@@ -87,7 +88,7 @@ export default async function ProfilePage() {
                                 size="sm"
                               />
                             </div>
-                            <p className="mt-1 text-sm text-muted">{application.team.region}</p>
+                            <p className="mt-1 text-sm text-muted">Region {application.team.region}</p>
                           </div>
                           <span
                             className={`rounded-full border px-3 py-1 text-xs font-medium ${applicationStatusClassName(application.status)}`}
@@ -103,9 +104,9 @@ export default async function ProfilePage() {
                         <div className="mt-4 flex flex-wrap items-center gap-4">
                           <Link
                             href={`/teams/${application.team.slug}`}
-                            className="text-sm font-medium text-accent-strong transition hover:text-white"
+                            className="inline-flex h-9 items-center rounded-full border border-line px-4 text-sm font-semibold text-slate-100 transition hover:bg-white/6"
                           >
-                            View roster
+                            View Roster
                           </Link>
                           {application.status === "APPROVED" ? (
                             isTeamMember ? (
@@ -159,7 +160,7 @@ export default async function ProfilePage() {
                     >
                       <div>
                         <p className="font-medium text-white">{team.name}</p>
-                        <p className="mt-1 text-sm text-muted">{team.role}</p>
+                        <p className="mt-1 text-sm text-muted">{formatTeamRole(team.role)}</p>
                       </div>
                       <ShieldCheck className="h-5 w-5 text-accent-strong" />
                     </Link>

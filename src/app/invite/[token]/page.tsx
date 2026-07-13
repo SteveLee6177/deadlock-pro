@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ArrowRight, CheckCircle2, Clock, ShieldAlert, UserCheck } from "lucide-react";
+import { DiscordOnboardingModal } from "@/components/discord-onboarding-modal";
 import { SiteHeader } from "@/components/navigation/site-header";
 import { RankBadge } from "@/components/rank-badge";
 import { TeamInviteActions } from "@/components/team-invite-actions";
@@ -11,10 +12,17 @@ import { isActiveTeamInvite } from "@/lib/team-invites";
 
 type TeamInvitePageProps = {
   params: Promise<{ token: string }>;
+  searchParams?: Promise<{ discord?: string | string[] }>;
 };
 
-export default async function TeamInvitePage({ params }: TeamInvitePageProps) {
+function asString(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export default async function TeamInvitePage({ params, searchParams }: TeamInvitePageProps) {
   const { token } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const showDiscordPrompt = asString(resolvedSearchParams.discord) === "1";
   const user = await getCurrentUser();
 
   const team = (await canUseDatabase())
@@ -53,7 +61,7 @@ export default async function TeamInvitePage({ params }: TeamInvitePageProps) {
           This invite link is no longer active.
         </h1>
         <p className="mt-5 text-lg leading-8 text-slate-300">
-          Ask the team owner or manager for a fresh 24-hour invite link.
+          Ask the team captain or manager for a fresh 24-hour invite link.
         </p>
       </>
     );
@@ -66,7 +74,7 @@ export default async function TeamInvitePage({ params }: TeamInvitePageProps) {
           Sign in to join {team.name}.
         </h1>
         <p className="mt-5 text-lg leading-8 text-slate-300">
-          Verify with Steam first, then you can accept this team invite.
+          Login with Steam first, then you can accept this team invite.
         </p>
         <Link
           href={`/sign-in?returnTo=${encodeURIComponent(returnTo)}`}
@@ -104,7 +112,7 @@ export default async function TeamInvitePage({ params }: TeamInvitePageProps) {
         </h1>
         <div className="mt-5 flex items-center gap-3 text-lg leading-8 text-slate-300">
           <span>
-            {team.tag} · {team.region}
+            {team.tag} · Region {team.region}
           </span>
           <RankBadge
             badgeLevel={team.primaryRankBadgeLevel}
@@ -120,6 +128,7 @@ export default async function TeamInvitePage({ params }: TeamInvitePageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader user={user} />
+      {user && !user.discordUsername && showDiscordPrompt ? <DiscordOnboardingModal /> : null}
 
       <main className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
         <section className="surface-strong rounded-lg p-8 md:p-10">

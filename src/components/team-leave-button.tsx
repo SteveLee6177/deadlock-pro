@@ -3,6 +3,7 @@
 import { Crown, LogOut, Trash2, X } from "lucide-react";
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { formatTeamRole } from "@/lib/team-roles";
 
 type TeamMemberOption = {
   id: string;
@@ -191,25 +192,25 @@ export function TeamLeaveButton({
           <div className="w-full max-w-lg rounded-lg border border-line bg-[#0a1724] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="eyebrow">Transfer Ownership</p>
-                <h2 className="mt-2 font-display text-3xl font-bold text-white">Choose the next owner</h2>
+                <p className="eyebrow">Transfer Captain</p>
+                <h2 className="mt-2 font-display text-3xl font-bold text-white">Choose the next team captain</h2>
               </div>
               <button
                 type="button"
                 onClick={() => setDialog(null)}
                 disabled={isPending}
                 className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-line text-muted transition hover:text-white disabled:opacity-50"
-                aria-label="Close ownership transfer"
+                aria-label="Close captain transfer"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <p className="mt-4 text-sm leading-6 text-muted">
-              Leaving as owner requires handing the team to someone else first.
+              Leaving as team captain requires handing the team to someone else first.
             </p>
             <label className="mt-5 grid gap-2 text-sm text-slate-200">
-              New owner
+              New team captain
               <select
                 value={selectedOwnerId}
                 onChange={(event) => setSelectedOwnerId(event.target.value)}
@@ -218,7 +219,7 @@ export function TeamLeaveButton({
               >
                 {transferOptions.map((member) => (
                   <option key={member.id} value={member.id} className="bg-slate-950">
-                    {member.profileName} ({member.role})
+                    {member.profileName} ({formatTeamRole(member.role)})
                   </option>
                 ))}
               </select>

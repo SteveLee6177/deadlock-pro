@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody } from "@/lib/request";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const actionSchema = z.object({
@@ -51,7 +52,7 @@ export async function PATCH(
     return jsonError("Sign in with Steam first.", 401);
   }
 
-  const parsed = actionSchema.safeParse(await request.json());
+  const parsed = actionSchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Choose a valid scrim action.", 400);
@@ -75,7 +76,7 @@ export async function PATCH(
   const canManageTeamB = await canManageTeamScrims(membershipData.user.id, scrim.teamBId);
 
   if (!canManageTeamA && !canManageTeamB) {
-    return jsonError("Only either team's owners/managers can cancel this scrim.", 403);
+    return jsonError("Only either team's captains/managers can cancel this scrim.", 403);
   }
 
   if (scrim.status !== "CONFIRMED") {

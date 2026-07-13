@@ -4,6 +4,8 @@ import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { publishScheduleEvent } from "@/lib/redis";
 import { prisma } from "@/lib/prisma";
+import { parseDateInput, readJsonBody } from "@/lib/request";
+import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const scheduleSchema = z.object({
   teamId: z.string().min(1),
@@ -28,12 +30,29 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Sign in with Steam first." }, { status: 401 });
   }
 
-  const payload = scheduleSchema.parse(await request.json());
-  const membership = membershipData.memberships.find((item) => item.team.id === payload.teamId);
+  const parsed = scheduleSchema.safeParse(await readJsonBody(request));
 
-  if (!membership) {
+  if (!parsed.success) {
     return NextResponse.json(
-      { message: "You can only manage schedules for teams you belong to." },
+      { message: "Check the schedule details and try again." },
+      { status: 400 },
+    );
+  }
+
+  const payload = parsed.data;
+  const startsAt = parseDateInput(payload.startsAt);
+  const endsAt = parseDateInput(payload.endsAt);
+
+  if (!startsAt || !endsAt || endsAt <= startsAt) {
+    return NextResponse.json(
+      { message: "Use valid schedule start and end times." },
+      { status: 400 },
+    );
+  }
+
+  if (!(await canManageTeamScrims(membershipData.user.id, payload.teamId))) {
+    return NextResponse.json(
+      { message: "Only team captains/managers can update team schedules." },
       { status: 403 },
     );
   }
@@ -52,8 +71,8 @@ export async function POST(request: Request) {
       teamId: payload.teamId,
       title: payload.title,
       type: "PRACTICE",
-      startsAt: new Date(payload.startsAt),
-      endsAt: new Date(payload.endsAt),
+      startsAt,
+      endsAt,
       location: payload.location,
       notes: payload.notes,
     },

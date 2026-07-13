@@ -55,7 +55,7 @@ export function PlayerApplicationActions({
         className="inline-flex h-9 items-center gap-2 rounded-full bg-accent px-4 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong disabled:cursor-not-allowed disabled:opacity-50"
       >
         <UserCheck className="h-4 w-4" />
-        {isPending ? "Accepting..." : "Accept invite"}
+        {isPending ? "Accepting..." : "Accept Invite"}
       </button>
       <button
         type="button"
@@ -64,7 +64,7 @@ export function PlayerApplicationActions({
         className="inline-flex h-9 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-slate-100 transition hover:bg-white/6 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <X className="h-4 w-4" />
-        Decline
+        Decline Invite
       </button>
       {feedback ? <p className="text-sm text-muted">{feedback}</p> : null}
     </div>

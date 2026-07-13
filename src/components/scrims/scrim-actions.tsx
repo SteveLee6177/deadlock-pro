@@ -70,7 +70,7 @@ export function ScrimAvailabilityForm({
 
       {manageableTeams.length === 0 ? (
         <p className="rounded-[18px] border border-line bg-white/5 p-4 text-sm text-muted">
-          Only team owners and managers can create official availability.
+          Only team captains and managers can create official availability.
         </p>
       ) : null}
 
@@ -169,6 +169,8 @@ export function RequestScrimButton({
       return;
     }
 
+    const requestingTeam = eligibleTeams.find((team) => team.id === requestingTeamId);
+
     startTransition(async () => {
       const response = await fetch("/api/scrims/requests", {
         method: "POST",
@@ -182,7 +184,11 @@ export function RequestScrimButton({
       setFeedback(await readMessage(response, "Scrim request submitted."));
 
       if (response.ok) {
-        router.refresh();
+        const teamQuery = requestingTeam?.slug
+          ? `?team=${encodeURIComponent(requestingTeam.slug)}`
+          : "";
+
+        router.push(`/scrims/requests${teamQuery}#sent`);
       }
     });
   }
@@ -203,7 +209,7 @@ export function RequestScrimButton({
     return (
       <button
         type="button"
-        onClick={() => setFeedback("Only team owners/managers can request official scrims.")}
+        onClick={() => setFeedback("Only team captains/managers can request official scrims.")}
         className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
       >
         <Send className="h-4 w-4" />
@@ -243,12 +249,18 @@ export function RequestScrimButton({
   );
 }
 
-export function RequestActions({ requestId }: { requestId: string }) {
+export function RequestActions({
+  mode = "incoming",
+  requestId,
+}: {
+  mode?: "incoming" | "outgoing";
+  requestId: string;
+}) {
   const router = useRouter();
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function act(action: "accept" | "decline") {
+  function act(action: "accept" | "decline" | "cancel") {
     startTransition(async () => {
       const response = await fetch(`/api/scrims/requests/${requestId}`, {
         method: "PATCH",
@@ -262,6 +274,24 @@ export function RequestActions({ requestId }: { requestId: string }) {
         router.refresh();
       }
     });
+  }
+
+  if (mode === "outgoing") {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => act("cancel")}
+          disabled={isPending}
+          aria-label="Cancel sent scrim request"
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-rose-300/30 px-4 text-sm font-medium text-rose-100 transition hover:bg-rose-300/10 disabled:opacity-50"
+        >
+          <X className="h-4 w-4" />
+          {isPending ? "Cancelling..." : "Cancel request"}
+        </button>
+        {feedback ? <p className="basis-full text-sm text-muted">{feedback}</p> : null}
+      </>
+    );
   }
 
   return (

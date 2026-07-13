@@ -54,7 +54,7 @@ export default async function DashboardPage() {
                 href={`/teams/${activeInvites[0].team.slug}`}
                 className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-semibold text-white transition hover:bg-white/6"
               >
-                View team
+                View Roster
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </div>

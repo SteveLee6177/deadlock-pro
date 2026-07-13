@@ -77,6 +77,8 @@ See [.env.example](/Users/splee/Documents/New project/.env.example) for the full
 - `DEADLOCK_API_BASE_URL`: Base URL for your Deadlock player API
 - `DEADLOCK_API_PROFILE_URL_TEMPLATE`: Optional full template like `https://example.com/players/{steamId}`
 - `DEADLOCK_API_KEY`: Optional bearer token for the Deadlock API
+- `ENABLE_LOCAL_TEST_AUTH`: Set to `true` only in local/dev environments when you want seeded test login links
+- `LOCAL_TEST_AUTH_ALLOWED_STEAM_IDS`: Comma-separated SteamID64 allowlist for local test login access
 
 ## Project Structure
 
@@ -94,3 +96,4 @@ See [.env.example](/Users/splee/Documents/New project/.env.example) for the full
 - Mutations require Postgres so forms return a helpful message until the database is configured.
 - Local Postgres and Redis are defined in [docker-compose.yml](/Users/splee/Documents/New project/docker-compose.yml) and can be stopped with `npm run infra:down`.
 - Scrim posting and schedule writes are limited to teams the signed-in user actually belongs to.
+- Local test auth is disabled unless explicitly enabled and paired with a SteamID64 allowlist. Keep it disabled in production.

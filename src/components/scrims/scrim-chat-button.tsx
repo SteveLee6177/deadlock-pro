@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { LoaderCircle, MessageSquare, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type {
@@ -48,9 +49,11 @@ function buildConversationUrl(entity: ScrimChatEntity) {
 export function ScrimChatButton({
   entity,
   label = "Chat",
+  unreadCount = 0,
 }: {
   entity: ScrimChatEntity;
   label?: string;
+  unreadCount?: number;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [status, setStatus] = useState<ChatStatus>("idle");
@@ -61,6 +64,7 @@ export function ScrimChatButton({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!isOpen) {
@@ -87,6 +91,11 @@ export function ScrimChatButton({
         setMessages(payload.messages);
         setSenderTeamId(payload.manageableTeamIds[0] ?? "");
         setStatus("live");
+
+        if (unreadCount > 0) {
+          window.dispatchEvent(new Event("scrim-notifications-changed"));
+          router.refresh();
+        }
       })
       .catch((error: Error) => {
         if (isCancelled) {
@@ -100,7 +109,7 @@ export function ScrimChatButton({
     return () => {
       isCancelled = true;
     };
-  }, [entity, isOpen]);
+  }, [entity, isOpen, router, unreadCount]);
 
   useEffect(() => {
     if (!isOpen || !conversation) {
@@ -210,10 +219,20 @@ export function ScrimChatButton({
           setFeedback(null);
           setIsOpen(true);
         }}
-        className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
+        className={cn(
+          "inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition",
+          unreadCount > 0
+            ? "border-success/70 bg-success/15 text-success shadow-[0_0_20px_rgba(114,209,178,0.16)] hover:bg-success/20"
+            : "border-line text-slate-100 hover:bg-white/6",
+        )}
       >
         <MessageSquare className="h-4 w-4" />
         {label}
+        {unreadCount > 0 ? (
+          <span className="rounded-full bg-success px-2 py-0.5 text-xs font-semibold text-slate-950">
+            {unreadCount}
+          </span>
+        ) : null}
       </button>
 
       {portalRoot && isOpen

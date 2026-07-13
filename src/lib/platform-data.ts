@@ -49,11 +49,14 @@ function mapTeam(team: {
   description: string;
   recruiting: boolean;
   openRoles: string[];
-  memberships: Array<unknown>;
+  memberships: Array<{ userId?: string }>;
   scheduleEvents?: Array<{ startsAt: Date }>;
   applications?: Array<{ status: string; createdAt: Date; declinedAt?: Date | null }>;
-}): TeamSummary {
+}, currentUserId?: string | null): TeamSummary {
   const currentUserApplication = team.applications?.[0];
+  const currentUserIsMember = Boolean(
+    currentUserId && team.memberships.some((membership) => membership.userId === currentUserId),
+  );
   const applicationCooldown = currentUserApplication
     ? {
         createdAt: currentUserApplication.createdAt,
@@ -83,7 +86,8 @@ function mapTeam(team: {
       ? `Next block ${formatDistanceToNow(team.scheduleEvents[0].startsAt, { addSuffix: true })}`
       : "Schedule open",
     currentUserApplicationStatus: currentUserApplication?.status ?? null,
-    currentUserCanApply,
+    currentUserCanApply: currentUserCanApply && !currentUserIsMember,
+    currentUserIsMember,
   };
 }
 
@@ -176,7 +180,7 @@ export async function getFeaturedTeams(): Promise<TeamSummary[]> {
         take: 6,
       });
 
-      return teams.map(mapTeam);
+      return teams.map((team) => mapTeam(team));
     },
     demoTeams,
   );
@@ -214,7 +218,7 @@ export async function getTeamsDirectory(): Promise<TeamSummary[]> {
         orderBy: [{ recruiting: "desc" }, { createdAt: "desc" }],
       });
 
-      return teams.map(mapTeam);
+      return teams.map((team) => mapTeam(team, user?.id));
     },
     demoTeams,
   );
@@ -389,7 +393,7 @@ export async function getCurrentUserTeamWorkspace(
         expiresAt: team.inviteExpiresAt?.toISOString() ?? null,
       },
       team: {
-        ...mapTeam(team),
+        ...mapTeam(team, membershipData.user.id),
         members: team.memberships.map((membership) => ({
           id: membership.user.id,
           steamId: membership.user.steamId,
@@ -454,7 +458,7 @@ export async function getTeamProfile(slug: string): Promise<TeamProfile | null> 
       }
 
       return {
-        ...mapTeam(team),
+        ...mapTeam(team, user?.id),
         members: team.memberships.map((membership) => ({
           id: membership.user.id,
           steamId: membership.user.steamId,

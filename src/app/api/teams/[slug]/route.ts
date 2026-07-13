@@ -3,14 +3,55 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getOrCreateCurrentDbUser } from "@/lib/db-user";
 import { RECRUITING_ROLE_OPTIONS } from "@/lib/recruiting-roles";
+import { REGION_OPTIONS } from "@/lib/regions";
 import { isScrimManagerRole } from "@/lib/scrim-permissions";
 import { prisma } from "@/lib/prisma";
 
 const updateRecruitingSchema = z.object({
-  recruiting: z.boolean(),
-  openRoles: z.array(z.enum(RECRUITING_ROLE_OPTIONS)).max(RECRUITING_ROLE_OPTIONS.length),
-  focus: z.string().trim().min(2, "Team focus must be at least 2 characters."),
-  description: z.string().trim().min(10, "Description must be at least 10 characters."),
+  recruiting: z.boolean().optional(),
+  openRoles: z.array(z.enum(RECRUITING_ROLE_OPTIONS)).max(RECRUITING_ROLE_OPTIONS.length).optional(),
+  focus: z.string().trim().min(2, "Team focus must be at least 2 characters.").optional(),
+  description: z.string().trim().min(10, "Description must be at least 10 characters.").optional(),
+  region: z.enum(REGION_OPTIONS).optional(),
+}).superRefine((payload, context) => {
+  const recruitingFields = [payload.recruiting, payload.openRoles, payload.focus, payload.description];
+  const isRecruitingUpdate = recruitingFields.some((value) => value !== undefined);
+
+  if (!isRecruitingUpdate) {
+    return;
+  }
+
+  if (payload.recruiting === undefined) {
+    context.addIssue({
+      code: "custom",
+      message: "Choose whether recruitment is open.",
+      path: ["recruiting"],
+    });
+  }
+
+  if (!payload.openRoles) {
+    context.addIssue({
+      code: "custom",
+      message: "Choose the open roles for recruiting.",
+      path: ["openRoles"],
+    });
+  }
+
+  if (!payload.focus) {
+    context.addIssue({
+      code: "custom",
+      message: "Team focus must be at least 2 characters.",
+      path: ["focus"],
+    });
+  }
+
+  if (!payload.description) {
+    context.addIssue({
+      code: "custom",
+      message: "Description must be at least 10 characters.",
+      path: ["description"],
+    });
+  }
 });
 
 function validationMessage(error: z.ZodError) {
@@ -52,7 +93,7 @@ export async function PATCH(
   const membership = team.memberships[0];
 
   if (!membership || !isScrimManagerRole(membership.role)) {
-    return NextResponse.json({ message: "Only team owners and managers can update recruiting needs." }, { status: 403 });
+    return NextResponse.json({ message: "Only team captains and managers can update recruiting needs." }, { status: 403 });
   }
 
   const body = await request.json().catch(() => null);
@@ -66,19 +107,41 @@ export async function PATCH(
   }
 
   const payload = parsedPayload.data;
-  const openRoles = Array.from(new Set(payload.openRoles.map((role) => role.trim()).filter(Boolean)));
+  const isRecruitingUpdate =
+    payload.recruiting !== undefined ||
+    payload.openRoles !== undefined ||
+    payload.focus !== undefined ||
+    payload.description !== undefined;
+
+  if (!isRecruitingUpdate && !payload.region) {
+    return NextResponse.json(
+      { message: "Choose a team setting to update." },
+      { status: 400 },
+    );
+  }
+
+  const openRoles = payload.openRoles
+    ? Array.from(new Set(payload.openRoles.map((role) => role.trim()).filter(Boolean)))
+    : undefined;
 
   await prisma.team.update({
     where: { id: team.id },
     data: {
-      recruiting: payload.recruiting,
-      openRoles,
-      focus: payload.focus,
-      description: payload.description,
+      ...(isRecruitingUpdate
+        ? {
+            recruiting: payload.recruiting,
+            openRoles,
+            focus: payload.focus,
+            description: payload.description,
+          }
+        : {}),
+      ...(payload.region ? { region: payload.region } : {}),
     },
   });
 
-  return NextResponse.json({ message: "Recruiting needs saved." });
+  return NextResponse.json({
+    message: isRecruitingUpdate ? "Recruiting needs saved." : "Team region saved.",
+  });
 }
 
 export async function DELETE(
@@ -116,7 +179,7 @@ export async function DELETE(
   const membership = team.memberships[0];
 
   if (team.ownerId !== user.id || membership?.role !== "OWNER") {
-    return NextResponse.json({ message: "Only the team owner can disband this team." }, { status: 403 });
+    return NextResponse.json({ message: "Only the team captain can disband this team." }, { status: 403 });
   }
 
   await prisma.$transaction([

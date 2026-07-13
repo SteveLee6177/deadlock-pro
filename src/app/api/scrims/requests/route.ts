@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody } from "@/lib/request";
 import { canRequestScrim } from "@/lib/scrim-permissions";
 
 const requestSchema = z.object({
@@ -94,7 +95,7 @@ export async function POST(request: Request) {
     return jsonError("Sign in with Steam first.", 401);
   }
 
-  const parsed = requestSchema.safeParse(await request.json());
+  const parsed = requestSchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Check the request details and try again.", 400);
@@ -125,7 +126,7 @@ export async function POST(request: Request) {
   }
 
   if (!(await canRequestScrim(membershipData.user.id, parsed.data.requestingTeamId))) {
-    return jsonError("Only team owners/managers can request official scrims.", 403);
+    return jsonError("Only team captains/managers can request official scrims.", 403);
   }
 
   if (await hasConfirmedOverlap(parsed.data.requestingTeamId, block.startTime, block.endTime)) {

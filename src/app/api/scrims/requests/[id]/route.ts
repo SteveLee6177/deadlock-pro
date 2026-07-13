@@ -3,6 +3,7 @@ import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody } from "@/lib/request";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 
 const actionSchema = z.object({
@@ -51,7 +52,7 @@ export async function PATCH(
     return jsonError("Sign in with Steam first.", 401);
   }
 
-  const parsed = actionSchema.safeParse(await request.json());
+  const parsed = actionSchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Choose a valid request action.", 400);
@@ -85,11 +86,11 @@ export async function PATCH(
   );
 
   if (parsed.data.action === "cancel" && !canManageRequesting) {
-    return jsonError("Only the requesting team's owners/managers can cancel this request.", 403);
+    return jsonError("Only the requesting team's captains/managers can cancel this request.", 403);
   }
 
   if (parsed.data.action !== "cancel" && !canManageReceiving) {
-    return jsonError("Only the receiving team's owners/managers can manage this request.", 403);
+    return jsonError("Only the receiving team's captains/managers can manage this request.", 403);
   }
 
   if (parsed.data.action === "decline" || parsed.data.action === "cancel") {

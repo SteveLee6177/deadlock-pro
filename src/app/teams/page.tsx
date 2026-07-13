@@ -1,7 +1,6 @@
 import { format } from "date-fns";
 import Link from "next/link";
 import {
-  ClipboardList,
   Cog,
   PlusCircle,
   ShieldCheck,
@@ -9,12 +8,14 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
+import { DiscordOnboardingModal } from "@/components/discord-onboarding-modal";
 import { DiscordCopyButton } from "@/components/discord-copy-button";
 import { SteamIcon } from "@/components/icons/steam-icon";
 import { TeamDirectoryExplorer } from "@/components/team-directory-explorer";
 import { TeamInviteLinkPanel } from "@/components/team-invite-link-panel";
 import { TeamLeaveButton } from "@/components/team-leave-button";
 import { TeamMemberKickButton } from "@/components/team-member-kick-button";
+import { TeamRegionForm } from "@/components/team-region-form";
 import { TeamApplicationActions } from "@/components/team-application-actions";
 import { RankBadge } from "@/components/rank-badge";
 import { SiteHeader } from "@/components/navigation/site-header";
@@ -26,6 +27,7 @@ import {
   getTeamsDirectory,
 } from "@/lib/platform-data";
 import { getSteamProfileUrl } from "@/lib/steam-profile";
+import { formatTeamRole } from "@/lib/team-roles";
 import type {
   OpenScrim,
   ScheduleFeedEvent,
@@ -39,10 +41,12 @@ type TeamsPageProps = {
     team?: string | string[];
     setup?: string | string[];
     view?: string | string[];
+    discord?: string | string[];
   }>;
 };
 
 const APPLICATION_MANAGER_ROLES = new Set(["OWNER", "MANAGER"]);
+const TEAM_SETTINGS_MANAGER_ROLES = new Set(["OWNER", "MANAGER", "CAPTAIN"]);
 
 function asString(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -52,8 +56,8 @@ function canManageApplications(role: string | undefined) {
   return Boolean(role && APPLICATION_MANAGER_ROLES.has(role));
 }
 
-function roleLabel(role: string) {
-  return role === "TRIAL" ? "Applicant" : role;
+function canManageTeamSettings(role: string | undefined) {
+  return Boolean(role && TEAM_SETTINGS_MANAGER_ROLES.has(role));
 }
 
 function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
@@ -65,7 +69,7 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
       </h1>
       <div className="mt-8 flex flex-wrap gap-3 text-sm">
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-          {workspace.team.region}
+          Region {workspace.team.region}
         </span>
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-success/30 bg-success/10">
           <RankBadge
@@ -75,7 +79,7 @@ function DashboardHero({ workspace }: { workspace: UserTeamWorkspace }) {
           />
         </span>
         <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-          {workspace.userRole}
+          {formatTeamRole(workspace.userRole)}
         </span>
       </div>
     </section>
@@ -108,7 +112,7 @@ function TeamRoster({
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="font-medium text-white">{member.profileName}</p>
-                <p className="mt-1 text-sm text-muted">{roleLabel(member.role)}</p>
+                <p className="mt-1 text-sm text-muted">{formatTeamRole(member.role)}</p>
               </div>
               <div className="flex items-center gap-3">
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-success/15">
@@ -237,12 +241,21 @@ function OwnerInvites({
 function OwnerScrimRequests({ scrims }: { scrims: OpenScrim[] }) {
   return (
     <section className="surface rounded-lg p-6">
-      <div className="flex items-center gap-3">
-        <Swords className="h-5 w-5 text-accent-strong" />
-        <div>
-          <p className="eyebrow">Scrim Requests</p>
-          <h2 className="mt-1 font-display text-3xl font-bold text-white">Open match blocks</h2>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Swords className="h-5 w-5 text-accent-strong" />
+          <div>
+            <p className="eyebrow">Scrim Requests</p>
+            <h2 className="mt-1 font-display text-3xl font-bold text-white">Open match blocks</h2>
+          </div>
         </div>
+        <Link
+          href="/scrims/calendar"
+          className="inline-flex min-h-10 items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
+        >
+          <Swords className="h-4 w-4" />
+          Full schedule
+        </Link>
       </div>
       <div className="mt-6 space-y-3">
         {scrims.length > 0 ? (
@@ -310,6 +323,11 @@ function OwnerSettings({
           </p>
         </div>
       </div>
+      {canManageTeamSettings(role) ? (
+        <div className="mt-6">
+          <TeamRegionForm currentRegion={team.region} slug={team.slug} />
+        </div>
+      ) : null}
       <div className="mt-6 flex flex-wrap items-center gap-4">
         <Link
           href={`/teams/${team.slug}?from=my-team`}
@@ -347,7 +365,7 @@ function OwnerSettings({
         </h3>
         <p className="mt-3 text-sm leading-6 text-muted">
           {role === "OWNER"
-            ? "Transfer ownership before leaving, or permanently remove the team."
+            ? "Transfer team captain duties before leaving, or permanently remove the team."
             : "Leaving removes your manager access and roster membership."}
         </p>
         <div className="mt-5">
@@ -414,14 +432,14 @@ function MemberDashboard({
           You are rostered on {team.name}.
         </h1>
         <p className="mt-5 max-w-3xl text-lg leading-8 text-slate-300">{team.description}</p>
-        <div className="mt-8 flex flex-wrap gap-3 text-sm">
-          <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
-            {roleLabel(role)}
+        <div className="mt-8 flex flex-wrap items-center gap-3 text-sm">
+          <span className="inline-flex min-h-10 items-center rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
+            {formatTeamRole(role)}
           </span>
-          <span className="rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
+          <span className="inline-flex min-h-10 items-center rounded-full border border-line bg-white/5 px-4 py-2 text-slate-100">
             {team.memberCount} members
           </span>
-          <span className="rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
+          <span className="inline-flex min-h-10 items-center rounded-full border border-success/30 bg-success/10 px-4 py-2 text-success">
             <RankBadge
               badgeLevel={team.primaryRankBadgeLevel}
               rank={team.primaryRank}
@@ -433,9 +451,18 @@ function MemberDashboard({
 
       <section className="grid gap-8 xl:grid-cols-[1.2fr_0.8fr]">
         <div>
-          <div className="mb-6">
-            <p className="eyebrow">Upcoming Scrims</p>
-            <h2 className="mt-2 font-display text-4xl font-bold text-white">Match blocks</h2>
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="eyebrow">Upcoming Scrims</p>
+              <h2 className="mt-2 font-display text-4xl font-bold text-white">Match blocks</h2>
+            </div>
+            <Link
+              href="/scrims/calendar"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
+            >
+              <Swords className="h-4 w-4" />
+              Full schedule
+            </Link>
           </div>
           {upcomingScrims.length > 0 ? (
             <ScheduleList events={upcomingScrims} />
@@ -447,6 +474,9 @@ function MemberDashboard({
         </div>
 
         <div className="space-y-8">
+          {canManageTeamSettings(role) ? (
+            <TeamRegionForm currentRegion={team.region} slug={team.slug} />
+          ) : null}
           <TeamRoster
             currentUserId={currentUserId}
             showPlayerLeaveAction
@@ -462,6 +492,7 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
   const resolvedSearchParams = searchParams ? await searchParams : {};
   const teamSlug = asString(resolvedSearchParams.team) ?? asString(resolvedSearchParams.setup);
   const viewMode = asString(resolvedSearchParams.view);
+  const showDiscordPrompt = asString(resolvedSearchParams.discord) === "1";
   const [user, teams, workspace] = await Promise.all([
     getCurrentUser(),
     getTeamsDirectory(),
@@ -474,6 +505,7 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader user={user} />
+      {user && !user.discordUsername && showDiscordPrompt ? <DiscordOnboardingModal /> : null}
 
       <main className="mx-auto flex w-full max-w-7xl flex-col gap-10 px-4 py-12 sm:px-6 lg:px-8">
         {showWorkspace && workspace ? (
@@ -503,13 +535,6 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
                 </div>
                 <div className="flex flex-wrap gap-3">
                   <Link
-                    href="#browse-teams"
-                    className="inline-flex items-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
-                  >
-                    <ClipboardList className="h-4 w-4" />
-                    Browse teams
-                  </Link>
-                  <Link
                     href={workspace ? ownTeamHref : user ? "/teams/create" : "/sign-in"}
                     className="inline-flex items-center gap-2 rounded-full border border-line px-5 py-2.5 text-sm font-medium text-slate-100 transition hover:bg-white/6"
                   >
@@ -522,8 +547,8 @@ export default async function TeamsPage({ searchParams }: TeamsPageProps) {
 
             <TeamDirectoryExplorer
               teams={teams}
-              canApply={!workspace}
-              canViewProfiles={!workspace}
+              canApply
+              canViewProfiles
             />
           </>
         )}

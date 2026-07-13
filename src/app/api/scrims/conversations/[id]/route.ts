@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
+import { readJsonBody } from "@/lib/request";
 import {
   createScrimMessage,
   getConversationContext,
+  markConversationChatNotificationsRead,
   listConversationMessages,
 } from "@/lib/scrim-chat";
 
@@ -35,12 +37,14 @@ export async function GET(
   const context = await getConversationContext(id, membershipData.user.id);
 
   if (context === "FORBIDDEN") {
-    return jsonError("Only either team's owners/managers can use this scrim chat.", 403);
+    return jsonError("Only either team's captains/managers can use this scrim chat.", 403);
   }
 
   if (!context) {
     return jsonError("Scrim chat not found.", 404);
   }
+
+  await markConversationChatNotificationsRead(id, membershipData.user.id);
 
   const { searchParams } = new URL(request.url);
   const afterParam = searchParams.get("after");
@@ -67,7 +71,7 @@ export async function POST(
     return jsonError("Sign in with Steam first.", 401);
   }
 
-  const parsed = messageSchema.safeParse(await request.json());
+  const parsed = messageSchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Write a message under 1000 characters.", 400);
@@ -82,7 +86,7 @@ export async function POST(
   });
 
   if (message === "FORBIDDEN") {
-    return jsonError("Only either team's owners/managers can use this scrim chat.", 403);
+    return jsonError("Only either team's captains/managers can use this scrim chat.", 403);
   }
 
   if (!message) {

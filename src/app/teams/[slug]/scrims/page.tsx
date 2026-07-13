@@ -118,7 +118,10 @@ export default async function TeamScrimsPage({
                       pageData.canManage
                         ? (scrim) => (
                             <div className="flex flex-wrap items-center gap-3">
-                              <ScrimChatButton entity={{ kind: "scrim", id: scrim.id }} />
+                              <ScrimChatButton
+                                entity={{ kind: "scrim", id: scrim.id }}
+                                unreadCount={scrim.unreadChatCount}
+                              />
                               <ScrimMatchManager scrim={scrim} />
                             </div>
                           )
@@ -144,6 +147,10 @@ export default async function TeamScrimsPage({
                               {request.receivingTeamId === pageData.team.id &&
                               request.status === "PENDING" ? (
                                 <RequestActions requestId={request.id} />
+                              ) : null}
+                              {request.requestingTeamId === pageData.team.id &&
+                              request.status === "PENDING" ? (
+                                <RequestActions mode="outgoing" requestId={request.id} />
                               ) : null}
                             </>
                           ) : undefined
@@ -203,7 +210,7 @@ export default async function TeamScrimsPage({
                   Official requests need team permissions
                 </h2>
                 <p className="mt-4 text-sm leading-6 text-muted">
-                  Owners and managers can request one of this team&apos;s open blocks from a team they manage.
+                  Team captains and managers can request one of this team&apos;s open blocks from a team they manage.
                 </p>
               </div>
             )}

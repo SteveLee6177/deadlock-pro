@@ -46,7 +46,7 @@ export function TeamJoinForm({
           Send your application
         </h3>
         <p className="mt-3 text-sm leading-6 text-muted">
-          One click sends your profile to the team owner and managers. They will decide the next
+          One click sends your profile to the team captain and managers. They will decide the next
           step from their My Team page.
         </p>
       </div>

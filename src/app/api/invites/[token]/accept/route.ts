@@ -42,6 +42,7 @@ export async function POST(
     select: {
       id: true,
       name: true,
+      slug: true,
       inviteExpiresAt: true,
     },
   });
@@ -84,7 +85,7 @@ export async function POST(
     return NextResponse.json(
       {
         status: "owner-transfer-required",
-        message: `Transfer ownership of ${currentMembership.team.name} before accepting another team invite.`,
+        message: `Transfer team captain duties for ${currentMembership.team.name} before accepting another team invite.`,
       },
       { status: 409 },
     );
@@ -124,6 +125,7 @@ export async function POST(
 
   return NextResponse.json({
     status: "joined",
+    teamSlug: team.slug,
     message: `You joined ${team.name}.`,
   });
 }

@@ -43,6 +43,33 @@ export function CreateTeamForm({
     }
   }
 
+  async function copyInviteLink() {
+    if (!inviteLink) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteLink);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = inviteLink;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      setCopiedInvite(true);
+      window.setTimeout(() => setCopiedInvite(false), 3000);
+    } catch {
+      setFeedback("Unable to copy link. Select the URL and copy it manually.");
+    }
+  }
+
   return (
     <>
       <form
@@ -276,17 +303,19 @@ export function CreateTeamForm({
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    void navigator.clipboard.writeText(inviteLink);
-                    setCopiedInvite(true);
-                    window.setTimeout(() => setCopiedInvite(false), 1800);
-                  }}
+                  onClick={copyInviteLink}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-full border border-line px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
                 >
                   {copiedInvite ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                   {copiedInvite ? "Copied" : "Copy link"}
                 </button>
               </div>
+              {copiedInvite ? (
+                <div className="inline-flex items-center gap-2 rounded-lg border border-success/30 bg-success/15 px-3 py-2 text-sm font-semibold text-success">
+                  <Check className="h-4 w-4" />
+                  Copied
+                </div>
+              ) : null}
 
             </div>
 

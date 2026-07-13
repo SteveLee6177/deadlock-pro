@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserPlus, Users } from "lucide-react";
+import { CalendarDays, ChevronDown, PlusCircle, Search, Swords, Trophy, Tv, UserPlus, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FocusEvent } from "react";
 import { TeamInviteBell } from "@/components/navigation/team-invite-bell";
@@ -10,8 +10,8 @@ import { RankBadge } from "@/components/rank-badge";
 import type { SessionUser, UserTeamOption } from "@/lib/types";
 
 const navItems = [
-  { href: "/scrims/calendar", label: "Scrims", icon: Swords },
-  { href: "/tournaments", label: "Tournaments", icon: Trophy },
+  { href: "/tournaments", label: "Tournaments", icon: Trophy, disabled: true },
+  { href: "/watch-teams", label: "Watch Teams", icon: Tv, disabled: true },
 ];
 
 const RECRUITING_MANAGER_ROLES = new Set(["OWNER", "MANAGER", "CAPTAIN"]);
@@ -151,6 +151,70 @@ function TeamsNavMenu({ user }: { user: SessionUser | null }) {
   );
 }
 
+function ScrimsNavMenu() {
+  const [open, setOpen] = useState(false);
+
+  function handleBlur(event: FocusEvent<HTMLDivElement>) {
+    const nextFocus = event.relatedTarget;
+
+    if (!(nextFocus instanceof Node) || !event.currentTarget.contains(nextFocus)) {
+      setOpen(false);
+    }
+  }
+
+  return (
+    <div
+      className="relative"
+      onBlur={handleBlur}
+      onFocus={() => setOpen(true)}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="menu"
+        onClick={() => setOpen((current) => !current)}
+        className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-slate-200 transition hover:bg-white/6 hover:text-white"
+      >
+        <Swords className="h-4 w-4" />
+        Scrims
+        <ChevronDown className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      <div
+        className={`absolute left-0 top-full z-50 w-48 pt-2 transition ${
+          open ? "visible translate-y-0 opacity-100" : "invisible -translate-y-1 opacity-0"
+        }`}
+      >
+        <div
+          role="menu"
+          className="rounded-lg border border-line bg-[#07131e] p-2 shadow-2xl shadow-black/30"
+        >
+          <Link
+            role="menuitem"
+            href="/scrims/calendar"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-100 transition hover:bg-white/6"
+          >
+            <CalendarDays className="h-4 w-4 text-accent-strong" />
+            Calendar
+          </Link>
+          <Link
+            role="menuitem"
+            href="/scrims/find"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-slate-100 transition hover:bg-white/6"
+          >
+            <Search className="h-4 w-4 text-accent-strong" />
+            Find Scrims
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SiteHeader({ user }: { user: SessionUser | null }) {
   return (
     <header className="sticky top-0 z-40 border-b border-line/60 bg-[#07131e]/85 backdrop-blur-xl">
@@ -169,16 +233,32 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
 
         <nav className="hidden items-center gap-2 lg:flex">
           <TeamsNavMenu user={user} />
-          {navItems.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-slate-200 transition hover:bg-white/6 hover:text-white"
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </Link>
-          ))}
+          <ScrimsNavMenu />
+          {navItems.map(({ href, label, icon: Icon, disabled }) =>
+            disabled ? (
+              <span
+                key={href}
+                aria-disabled="true"
+                title="Coming soon"
+                className="flex cursor-not-allowed items-center gap-2 rounded-full px-4 py-2 text-sm text-slate-500"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+                <span className="rounded-full border border-line bg-white/5 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                  Soon
+                </span>
+              </span>
+            ) : (
+              <Link
+                key={href}
+                href={href}
+                className="flex items-center gap-2 rounded-full px-4 py-2 text-sm text-slate-200 transition hover:bg-white/6 hover:text-white"
+              >
+                <Icon className="h-4 w-4" />
+                {label}
+              </Link>
+            ),
+          )}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -207,18 +287,11 @@ export function SiteHeader({ user }: { user: SessionUser | null }) {
           ) : (
             <Link
               href="/sign-in"
-            className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
-          >
-              Verify Steam
+              className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-accent-strong"
+            >
+              Login with Steam
             </Link>
           )}
-          <Link
-            href="/tournaments"
-            className="hidden items-center gap-2 rounded-full border border-line px-4 py-2 text-sm text-slate-100 transition hover:bg-white/6 md:flex"
-          >
-            <Tv className="h-4 w-4" />
-            Watch feed
-          </Link>
         </div>
       </div>
     </header>

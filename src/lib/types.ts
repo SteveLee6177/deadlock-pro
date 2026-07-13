@@ -24,6 +24,7 @@ export type TeamSummary = {
   availability: string;
   currentUserApplicationStatus?: string | null;
   currentUserCanApply?: boolean;
+  currentUserIsMember?: boolean;
 };
 
 export type UserTeamOption = {
@@ -155,6 +156,7 @@ export type ScrimMatchSummary = {
   endTime: string;
   status: string;
   notes: string | null;
+  unreadChatCount: number;
 };
 
 export type ScrimChatEntity =

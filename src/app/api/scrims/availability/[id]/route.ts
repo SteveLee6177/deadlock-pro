@@ -4,6 +4,7 @@ import { canUseDatabase } from "@/lib/database";
 import { getCurrentUserMemberships } from "@/lib/db-user";
 import { prisma } from "@/lib/prisma";
 import { REGION_OPTIONS } from "@/lib/regions";
+import { readJsonBody } from "@/lib/request";
 import { canManageTeamScrims } from "@/lib/scrim-permissions";
 import { parseAbsoluteDateTime } from "@/lib/time-zone";
 
@@ -54,7 +55,7 @@ async function getEditableBlock(id: string, userId: string) {
 
   if (!(await canManageTeamScrims(userId, block.teamId))) {
     return {
-      error: jsonError("Only team owners/managers can manage this availability block.", 403),
+      error: jsonError("Only team captains/managers can manage this availability block.", 403),
       block: null,
     };
   }
@@ -87,7 +88,7 @@ export async function PATCH(
     return error;
   }
 
-  const parsed = updateSchema.safeParse(await request.json());
+  const parsed = updateSchema.safeParse(await readJsonBody(request));
 
   if (!parsed.success) {
     return jsonError("Check the availability details and try again.", 400);

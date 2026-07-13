@@ -9,10 +9,16 @@ export const env = {
   deadlockApiBaseUrl: process.env.DEADLOCK_API_BASE_URL,
   deadlockApiKey: process.env.DEADLOCK_API_KEY,
   deadlockApiProfileUrlTemplate: process.env.DEADLOCK_API_PROFILE_URL_TEMPLATE,
+  enableLocalTestAuth: process.env.ENABLE_LOCAL_TEST_AUTH,
+  localTestAuthAllowedSteamIds: process.env.LOCAL_TEST_AUTH_ALLOWED_STEAM_IDS,
 };
 
 export function getBaseUrl() {
   return env.appUrl.replace(/\/$/, "");
+}
+
+export function getAppUrl(path = "/") {
+  return new URL(path, `${getBaseUrl()}/`).toString();
 }
 
 export function getSteamRealm() {

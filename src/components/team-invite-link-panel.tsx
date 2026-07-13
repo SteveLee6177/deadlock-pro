@@ -31,14 +31,32 @@ export function TeamInviteLinkPanel({
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  function copyInviteLink() {
+  async function copyInviteLink() {
     if (!url) {
       return;
     }
 
-    void navigator.clipboard.writeText(url);
-    setCopied(true);
-    window.setTimeout(() => setCopied(false), 1800);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = url;
+        textArea.setAttribute("readonly", "");
+        textArea.style.position = "fixed";
+        textArea.style.opacity = "0";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+      }
+
+      setCopied(true);
+      setFeedback(null);
+      window.setTimeout(() => setCopied(false), 3000);
+    } catch {
+      setFeedback("Unable to copy link. Select the URL and copy it manually.");
+    }
   }
 
   function createInviteLink() {
@@ -90,6 +108,12 @@ export function TeamInviteLinkPanel({
           {isPending ? "Refreshing..." : url ? "Refresh link" : "Create link"}
         </button>
       </div>
+      {copied ? (
+        <div className="mt-3 inline-flex items-center gap-2 rounded-lg border border-success/30 bg-success/15 px-3 py-2 text-sm font-semibold text-success">
+          <Check className="h-4 w-4" />
+          Copied
+        </div>
+      ) : null}
       <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted">
         <span>{formatExpiry(expiresAt)}</span>
         {feedback ? <span>{feedback}</span> : null}

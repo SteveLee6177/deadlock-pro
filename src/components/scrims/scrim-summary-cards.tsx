@@ -1,7 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CalendarRange, MapPinned, MessageSquare, Shield, Swords } from "lucide-react";
-import { LocalScheduleRange } from "@/components/local-schedule-range";
+import { ArrowUpRight, CalendarRange, MapPinned, MessageSquare, Shield, Swords, Users } from "lucide-react";
+import {
+  LocalCompactDate,
+  LocalCompactTimeRange,
+  LocalScheduleRange,
+} from "@/components/local-schedule-range";
 import { RankBadge } from "@/components/rank-badge";
 import { ScrimStatusPill } from "@/components/scrims/scrim-status-pill";
 import type {
@@ -97,18 +101,31 @@ export function AvailabilityBlockCard({
   action?: ReactNode;
 }) {
   return (
-    <article className="rounded-lg border border-line bg-white/5 p-5">
+    <article className="rounded-lg border border-line bg-white/5 p-5 transition hover:border-accent/50">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-display text-2xl font-bold text-white">{block.teamName}</h3>
+          <Link
+            href={`/teams/${block.teamSlug}`}
+            className="font-display text-2xl font-bold text-white transition hover:text-accent-strong"
+          >
+            {block.teamName}
+            <ArrowUpRight className="ml-2 inline h-4 w-4 align-[-1px]" />
+          </Link>
         </div>
         <ScrimStatusPill status={block.status} />
       </div>
-      <div className="mt-5 space-y-3 text-sm text-muted">
-        <p className="flex items-center gap-2">
-          <CalendarRange className="h-4 w-4 text-accent-strong" />
-          <LocalScheduleRange start={block.startTime} end={block.endTime} />
+
+      <div className="mt-5 rounded-lg border border-accent/35 bg-accent/10 px-4 py-3">
+        <p className="font-display text-5xl font-bold leading-none text-white">
+          <LocalCompactTimeRange start={block.startTime} end={block.endTime} />
         </p>
+        <p className="mt-2 flex items-center gap-2 text-sm font-medium text-accent-strong">
+          <CalendarRange className="h-4 w-4" />
+          <LocalCompactDate value={block.startTime} />
+        </p>
+      </div>
+
+      <div className="mt-5 grid gap-3 text-sm text-muted sm:grid-cols-2">
         <p className="flex items-center gap-2">
           <MapPinned className="h-4 w-4 text-accent-strong" />
           {block.region}
@@ -122,11 +139,11 @@ export function AvailabilityBlockCard({
       <div className="mt-5 flex flex-wrap items-center gap-3">
         {action}
         <Link
-          href={`/teams/${block.teamSlug}/scrims`}
-          className="inline-flex items-center gap-2 text-sm font-medium text-accent-strong transition hover:text-white"
+          href={`/teams/${block.teamSlug}`}
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-accent/50 bg-accent/15 px-4 text-sm font-semibold text-accent-strong transition hover:bg-accent/25 hover:text-white"
         >
-          Team scrims
-          <Swords className="h-4 w-4" />
+          <Users className="h-4 w-4" />
+          View Roster
         </Link>
       </div>
     </article>
@@ -144,6 +161,8 @@ export function RequestCard({
 }) {
   const opponentName =
     direction === "incoming" ? request.requestingTeamName : request.receivingTeamName;
+  const opponentSlug =
+    direction === "incoming" ? request.requestingTeamSlug : request.receivingTeamSlug;
   const opponentRegion =
     direction === "incoming" ? request.requestingTeamRegion : request.receivingTeamRegion;
   const opponentRank =
@@ -160,18 +179,36 @@ export function RequestCard({
           <p className="text-xs uppercase tracking-[0.2em] text-accent-strong">
             {direction === "incoming" ? "From" : "To"}
           </p>
-          <h3 className="mt-2 font-display text-2xl font-bold text-white">{opponentName}</h3>
+          <h3 className="mt-2 font-display text-2xl font-bold text-white">
+            <Link
+              href={`/teams/${opponentSlug}#roster`}
+              className="transition hover:text-accent-strong"
+            >
+              {opponentName}
+              <ArrowUpRight className="ml-2 inline h-4 w-4 align-[-1px]" />
+            </Link>
+          </h3>
         </div>
         <ScrimStatusPill status={request.status} />
       </div>
       <div className="mt-5 grid gap-3 text-sm text-muted sm:grid-cols-3">
-        <p className="flex items-center gap-2 sm:col-span-3">
+        <p className="flex min-h-8 items-center gap-2 sm:col-span-3">
           <CalendarRange className="h-4 w-4 text-accent-strong" />
           <LocalScheduleRange start={request.startTime} end={request.endTime} />
         </p>
-        <p>{opponentRegion}</p>
-        <p>
-          <RankBadge badgeLevel={opponentRankBadgeLevel} rank={opponentRank} size="sm" />
+        <p className="flex min-h-8 items-center gap-2">
+          <MapPinned className="h-4 w-4 text-accent-strong" />
+          {opponentRegion}
+        </p>
+        <p className="flex min-h-8 items-center gap-2">
+          <Shield className="h-4 w-4 text-accent-strong" />
+          <RankBadge
+            badgeLevel={opponentRankBadgeLevel}
+            className="shrink-0"
+            rank={opponentRank}
+            size="sm"
+          />
+          <span>{opponentRank}</span>
         </p>
       </div>
       {request.message ? (

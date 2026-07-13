@@ -117,7 +117,7 @@ function mapScrim(scrim: {
   notes: string | null;
   teamA: { name: string };
   teamB: { name: string };
-}): ScrimMatchSummary {
+}, unreadChatCount = 0): ScrimMatchSummary {
   return {
     id: scrim.id,
     teamAId: scrim.teamAId,
@@ -128,6 +128,7 @@ function mapScrim(scrim: {
     endTime: scrim.endTime.toISOString(),
     status: scrim.status,
     notes: scrim.notes,
+    unreadChatCount,
   };
 }
 
@@ -388,6 +389,7 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
     return emptyWorkspace;
   }
 
+  const membershipData = await getCurrentUserMemberships();
   const now = new Date();
   const horizon = addDays(now, 45);
 
@@ -450,7 +452,10 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
   const mappedAvailability = availabilityBlocks.map(mapAvailability);
   const mappedIncoming = incomingRequests.map(mapRequest);
   const mappedOutgoing = outgoingRequests.map(mapRequest);
-  const mappedScrims = scrims.map(mapScrim);
+  const unreadChatCounts = membershipData
+    ? await getUnreadConfirmedScrimChatCounts(scrims, membershipData.user.id)
+    : new Map<string, number>();
+  const mappedScrims = scrims.map((scrim) => mapScrim(scrim, unreadChatCounts.get(scrim.id) ?? 0));
   const visibleAvailability = filterVisibleAvailability(mappedAvailability, mappedScrims);
 
   return {
@@ -469,6 +474,86 @@ export async function getScrimWorkspace(preferredSlug?: string): Promise<ScrimWo
       mappedScrims,
     ),
   };
+}
+
+async function getUnreadConfirmedScrimChatCounts(
+  scrims: Array<{
+    id: string;
+    availabilityBlockId: string;
+  }>,
+  userId: string,
+) {
+  if (scrims.length === 0) {
+    return new Map<string, number>();
+  }
+
+  const scrimIds = scrims.map((scrim) => scrim.id);
+  const availabilityBlockIds = scrims.map((scrim) => scrim.availabilityBlockId);
+  const conversations = await prisma.scrimConversation.findMany({
+    where: {
+      OR: [
+        { scrimId: { in: scrimIds } },
+        {
+          bookingRequest: {
+            status: "ACCEPTED",
+            availabilityBlockId: { in: availabilityBlockIds },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      scrimId: true,
+      bookingRequest: {
+        select: {
+          availabilityBlockId: true,
+        },
+      },
+    },
+  });
+  const scrimIdByBlockId = new Map(
+    scrims.map((scrim) => [scrim.availabilityBlockId, scrim.id]),
+  );
+  const conversationIdToScrimId = new Map<string, string>();
+
+  for (const conversation of conversations) {
+    const scrimId =
+      conversation.scrimId ??
+      (conversation.bookingRequest
+        ? scrimIdByBlockId.get(conversation.bookingRequest.availabilityBlockId)
+        : undefined);
+
+    if (scrimId) {
+      conversationIdToScrimId.set(conversation.id, scrimId);
+    }
+  }
+
+  if (conversationIdToScrimId.size === 0) {
+    return new Map<string, number>();
+  }
+
+  const notifications = await prisma.notification.groupBy({
+    by: ["relatedEntityId"],
+    where: {
+      userId,
+      readAt: null,
+      type: "SCRIM_CHAT",
+      relatedEntityId: { in: [...conversationIdToScrimId.keys()] },
+    },
+    _count: { _all: true },
+  });
+  const counts = new Map<string, number>();
+
+  for (const notification of notifications) {
+    const conversationId = notification.relatedEntityId;
+    const scrimId = conversationId ? conversationIdToScrimId.get(conversationId) : null;
+
+    if (scrimId) {
+      counts.set(scrimId, (counts.get(scrimId) ?? 0) + notification._count._all);
+    }
+  }
+
+  return counts;
 }
 
 const requestIncludes = {
@@ -614,7 +699,11 @@ export async function getTeamScrimPage(slug: string, userId?: string | null) {
   const mappedBlocks = blocks.map(mapAvailability);
   const mappedIncoming = incomingRequests.map(mapRequest);
   const mappedOutgoing = outgoingRequests.map(mapRequest);
-  const mappedScrims = scrims.map(mapScrim);
+  const unreadChatCounts =
+    userId && isMember
+      ? await getUnreadConfirmedScrimChatCounts(scrims, userId)
+      : new Map<string, number>();
+  const mappedScrims = scrims.map((scrim) => mapScrim(scrim, unreadChatCounts.get(scrim.id) ?? 0));
   const visibleAvailability = filterVisibleAvailability(mappedBlocks, mappedScrims);
 
   const teamSummary: TeamSummary = {

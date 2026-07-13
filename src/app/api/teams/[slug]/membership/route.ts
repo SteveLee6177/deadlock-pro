@@ -58,7 +58,7 @@ export async function DELETE(
 
     if (!nextOwner) {
       return NextResponse.json(
-        { message: "Choose another team member to receive ownership before leaving." },
+        { message: "Choose another team member to become team captain before leaving." },
         { status: 400 },
       );
     }
@@ -83,7 +83,7 @@ export async function DELETE(
     ]);
     await recalculateTeamRank(team.id);
 
-    return NextResponse.json({ message: "Ownership transferred and you left the team." });
+    return NextResponse.json({ message: "Team captain duties transferred and you left the team." });
   }
 
   await prisma.$transaction([

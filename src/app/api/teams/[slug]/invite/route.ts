@@ -44,7 +44,7 @@ export async function POST(
 
   if (!TEAM_INVITE_MANAGER_ROLES.has(team.memberships[0]?.role ?? "")) {
     return NextResponse.json(
-      { message: "Only team owners and managers can create invite links." },
+      { message: "Only team captains and managers can create invite links." },
       { status: 403 },
     );
   }

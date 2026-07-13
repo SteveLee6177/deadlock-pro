@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getCurrentUser } from "@/lib/auth";
 import { canUseDatabase } from "@/lib/database";
 import { prisma } from "@/lib/prisma";
+import { readJsonBody } from "@/lib/request";
 import {
   canReapplyToDeclinedTeamApplication,
   canStoreTeamApplicationDeclinedAt,
@@ -32,7 +33,13 @@ export async function POST(
   }
 
   const { slug } = await context.params;
-  const payload = applySchema.parse((await request.json().catch(() => ({}))) ?? {});
+  const parsed = applySchema.safeParse((await readJsonBody(request)) ?? {});
+
+  if (!parsed.success) {
+    return NextResponse.json({ message: "Check your application and try again." }, { status: 400 });
+  }
+
+  const payload = parsed.data;
   const team = await prisma.team.findUnique({ where: { slug } });
 
   if (!team) {
@@ -59,17 +66,13 @@ export async function POST(
   });
   await syncDeadlockRankForUser(applicant);
   const currentMembership = await prisma.teamMembership.findFirst({
-    where: { userId: applicant.id },
-    include: {
-      team: {
-        select: { name: true },
-      },
-    },
+    where: { userId: applicant.id, teamId: team.id },
+    select: { id: true },
   });
 
   if (currentMembership) {
     return NextResponse.json(
-      { message: `Leave ${currentMembership.team.name} before applying to another team.` },
+      { message: `You are already on ${team.name}.` },
       { status: 409 },
     );
   }
@@ -131,5 +134,5 @@ export async function POST(
     },
   });
 
-  return NextResponse.json({ message: "Application sent to the team owner and managers." });
+  return NextResponse.json({ message: "Application sent to the team captain and managers." });
 }

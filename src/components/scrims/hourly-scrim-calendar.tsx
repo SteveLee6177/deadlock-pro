@@ -29,6 +29,8 @@ const EVENT_STYLES: Record<ScrimCalendarEvent["kind"], string> = {
   scrim: "border-sky-300/30 bg-sky-300/10",
 };
 
+type WeekSlideDirection = "next" | "previous" | null;
+
 type SelectedSlot = {
   startTime: string;
   endTime: string;
@@ -144,6 +146,7 @@ export function HourlyScrimCalendar({
   const [actionFeedback, setActionFeedback] = useState<string | null>(null);
   const [optimisticEvents, setOptimisticEvents] = useState<ScrimCalendarEvent[]>([]);
   const [dayScrollState, setDayScrollState] = useState<Record<string, DayScrollState>>({});
+  const [weekSlideDirection, setWeekSlideDirection] = useState<WeekSlideDirection>(null);
   const [isActionPending, startActionTransition] = useTransition();
   const dayScrollRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const router = useRouter();
@@ -233,6 +236,24 @@ export function HourlyScrimCalendar({
     });
   }
 
+  function moveRange(dayOffset: number) {
+    setWeekSlideDirection(dayOffset > 0 ? "next" : "previous");
+    setRangeStart((current) => addDays(current ?? startOfDay(new Date()), dayOffset));
+  }
+
+  function moveToToday() {
+    const now = new Date();
+    const nextRangeStart = startOfDay(now);
+    const currentRangeStart = rangeStart ?? nextRangeStart;
+
+    if (nextRangeStart.getTime() !== currentRangeStart.getTime()) {
+      setWeekSlideDirection(nextRangeStart > currentRangeStart ? "next" : "previous");
+    }
+
+    setToday(now);
+    setRangeStart(nextRangeStart);
+  }
+
   function openSlot(day: Date, hour: number) {
     const start = makeLocalSlot(day, hour);
     const end = makeLocalSlot(day, hour + 1);
@@ -296,6 +317,7 @@ export function HourlyScrimCalendar({
   }
 
   const currentZoneName = getTimeZoneName(new Date(), timeZone);
+  const rangeKey = rangeStart.toISOString();
 
   return (
     <section className="surface rounded-lg p-5">
@@ -315,7 +337,7 @@ export function HourlyScrimCalendar({
           <div className="inline-flex rounded-full border border-line bg-white/5 p-1">
             <button
               type="button"
-              onClick={() => setRangeStart((current) => addDays(current ?? startOfDay(new Date()), -7))}
+              onClick={() => moveRange(-7)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-100 transition hover:bg-white/6"
               aria-label="Previous 7-day range"
             >
@@ -323,19 +345,14 @@ export function HourlyScrimCalendar({
             </button>
             <button
               type="button"
-              onClick={() => {
-                const now = new Date();
-
-                setToday(now);
-                setRangeStart(startOfDay(now));
-              }}
+              onClick={moveToToday}
               className="h-9 rounded-full px-4 text-sm font-medium text-slate-100 transition hover:bg-white/6"
             >
               Today
             </button>
             <button
               type="button"
-              onClick={() => setRangeStart((current) => addDays(current ?? startOfDay(new Date()), 7))}
+              onClick={() => moveRange(7)}
               className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-100 transition hover:bg-white/6"
               aria-label="Next 7-day range"
             >
@@ -345,160 +362,170 @@ export function HourlyScrimCalendar({
         </div>
       </div>
 
-      <div className="mt-5 overflow-x-auto">
-        <div className="grid min-w-[1040px] grid-cols-7 gap-3">
-          {days.map((day) => {
-            const dayKey = day.toISOString();
-            const isToday = today ? isSameDay(day, today) : false;
-            const scrollState = dayScrollState[dayKey] ?? {
-              canScrollDown: true,
-              canScrollUp: false,
-            };
+      <div className="mt-5 overflow-hidden">
+        <div className="overflow-x-auto">
+          <div
+            key={rangeKey}
+            onAnimationEnd={() => setWeekSlideDirection(null)}
+            className={cn(
+              "grid min-w-[1040px] grid-cols-7 gap-3 will-change-transform",
+              weekSlideDirection === "next" && "scrim-week-slide-next",
+              weekSlideDirection === "previous" && "scrim-week-slide-previous",
+            )}
+          >
+            {days.map((day) => {
+              const dayKey = day.toISOString();
+              const isToday = today ? isSameDay(day, today) : false;
+              const scrollState = dayScrollState[dayKey] ?? {
+                canScrollDown: true,
+                canScrollUp: false,
+              };
 
-            return (
-            <div
-              key={dayKey}
-              aria-current={isToday ? "date" : undefined}
-              className={cn(
-                "group overflow-hidden rounded-[18px] border bg-white/4 transition",
-                isToday
-                  ? "border-accent/70 bg-accent/8 shadow-[0_0_0_1px_rgba(239,124,52,0.34),0_18px_50px_rgba(239,124,52,0.14)]"
-                  : "border-line",
-              )}
-            >
-              <div
-                className={cn(
-                  "border-b px-3 py-3",
-                  isToday ? "border-accent/40 bg-accent/12" : "border-line bg-slate-950/35",
-                )}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-white">{formatLocalDay(day, timeZone)}</p>
-                  {isToday ? (
-                    <span className="rounded-full border border-accent/40 bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-950">
-                      Today
-                    </span>
-                  ) : null}
-                </div>
-                <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted">
-                  {getTimeZoneName(day, timeZone)}
-                </p>
-              </div>
-              <div className="relative">
+              return (
                 <div
-                  ref={(node) => {
-                    dayScrollRefs.current[dayKey] = node;
-                  }}
-                  onScroll={(event) => updateDayScrollState(dayKey, event.currentTarget)}
-                  className="calendar-day-scroll overflow-y-auto scroll-smooth"
-                  style={{ maxHeight: HOUR_ROW_HEIGHT * VISIBLE_HOUR_ROWS }}
-                  aria-label={`${formatLocalDay(day, timeZone)} scrollable hourly schedule`}
+                  key={dayKey}
+                  aria-current={isToday ? "date" : undefined}
+                  className={cn(
+                    "group overflow-hidden rounded-[18px] border bg-white/4 transition",
+                    isToday
+                      ? "border-accent/70 bg-accent/8 shadow-[0_0_0_1px_rgba(239,124,52,0.34),0_18px_50px_rgba(239,124,52,0.14)]"
+                      : "border-line",
+                  )}
                 >
-                  {hours.map((hour) => {
-                    const slotStart = makeLocalSlot(day, hour);
-                    const slotEnd = makeLocalSlot(day, hour + 1);
-                    const slotEvents = visibleEvents.filter((event) =>
-                      overlapsHour(event.startTime, event.endTime, slotStart, slotEnd),
-                    );
-                    const hasScheduledBlock = slotEvents.some(blocksNewAvailability);
-                    const isPastSlot = today ? isElapsedSlot(slotEnd, today) : true;
+                  <div
+                    className={cn(
+                      "border-b px-3 py-3",
+                      isToday ? "border-accent/40 bg-accent/12" : "border-line bg-slate-950/35",
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold text-white">{formatLocalDay(day, timeZone)}</p>
+                      {isToday ? (
+                        <span className="rounded-full border border-accent/40 bg-accent px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-950">
+                          Today
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-[10px] uppercase tracking-[0.18em] text-muted">
+                      {getTimeZoneName(day, timeZone)}
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <div
+                      ref={(node) => {
+                        dayScrollRefs.current[dayKey] = node;
+                      }}
+                      onScroll={(event) => updateDayScrollState(dayKey, event.currentTarget)}
+                      className="calendar-day-scroll overflow-y-auto scroll-smooth"
+                      style={{ maxHeight: HOUR_ROW_HEIGHT * VISIBLE_HOUR_ROWS }}
+                      aria-label={`${formatLocalDay(day, timeZone)} scrollable hourly schedule`}
+                    >
+                      {hours.map((hour) => {
+                        const slotStart = makeLocalSlot(day, hour);
+                        const slotEnd = makeLocalSlot(day, hour + 1);
+                        const slotEvents = visibleEvents.filter((event) =>
+                          overlapsHour(event.startTime, event.endTime, slotStart, slotEnd),
+                        );
+                        const hasScheduledBlock = slotEvents.some(blocksNewAvailability);
+                        const isPastSlot = today ? isElapsedSlot(slotEnd, today) : true;
 
-                    return (
-                      <div
-                        key={hour}
-                        className="relative border-b border-line px-3 py-3 last:border-b-0"
-                        style={{ minHeight: HOUR_ROW_HEIGHT }}
-                      >
-                        <div className="mb-3 flex items-center justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-semibold text-white">{formatLocalHour(slotStart, timeZone)}</p>
-                            <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
-                              {getTimeZoneName(slotStart, timeZone)}
-                            </p>
-                          </div>
-                          {canManage && !hasScheduledBlock && !isPastSlot ? (
-                            <button
-                              type="button"
-                              onClick={() => openSlot(day, hour)}
-                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-slate-950/70 text-accent-strong transition hover:border-accent hover:bg-accent hover:text-slate-950"
-                              aria-label={`Add Looking For Scrim block for ${formatLocalDay(day, timeZone)} at ${formatLocalHour(slotStart, timeZone)} ${getTimeZoneName(slotStart, timeZone)}`}
-                            >
-                              <Plus className="h-4 w-4" />
-                            </button>
-                          ) : null}
-                        </div>
-                        <div className="space-y-1.5">
-                          {slotEvents.map((event) => (
-                            <div
-                              key={`${event.kind}-${event.id}`}
-                              className={cn("rounded-[12px] border p-2", eventStyle(event))}
-                            >
-                              <div className="flex flex-wrap items-start justify-between gap-1.5">
-                                <div>
-                                  <p className="text-xs font-semibold text-white">{eventTitle(event)}</p>
-                                  {event.kind === "availability" ? (
-                                    <p className="mt-0.5 text-[11px] leading-4 text-muted">
-                                      {selectedTeam.name} · {selectedTeam.region}
+                        return (
+                          <div
+                            key={hour}
+                            className="relative border-b border-line px-3 py-3 last:border-b-0"
+                            style={{ minHeight: HOUR_ROW_HEIGHT }}
+                          >
+                            <div className="mb-3 flex items-center justify-between gap-2">
+                              <div>
+                                <p className="text-sm font-semibold text-white">{formatLocalHour(slotStart, timeZone)}</p>
+                                <p className="text-[10px] uppercase tracking-[0.18em] text-muted">
+                                  {getTimeZoneName(slotStart, timeZone)}
+                                </p>
+                              </div>
+                              {canManage && !hasScheduledBlock && !isPastSlot ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openSlot(day, hour)}
+                                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-line bg-slate-950/70 text-accent-strong transition hover:border-accent hover:bg-accent hover:text-slate-950"
+                                  aria-label={`Add Looking For Scrim block for ${formatLocalDay(day, timeZone)} at ${formatLocalHour(slotStart, timeZone)} ${getTimeZoneName(slotStart, timeZone)}`}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </button>
+                              ) : null}
+                            </div>
+                            <div className="space-y-1.5">
+                              {slotEvents.map((event) => (
+                                <div
+                                  key={`${event.kind}-${event.id}`}
+                                  className={cn("rounded-[12px] border p-2", eventStyle(event))}
+                                >
+                                  <div className="flex flex-wrap items-start justify-between gap-1.5">
+                                    <div>
+                                      <p className="text-xs font-semibold text-white">{eventTitle(event)}</p>
+                                      {event.kind === "availability" ? (
+                                        <p className="mt-0.5 text-[11px] leading-4 text-muted">
+                                          {selectedTeam.name} · {selectedTeam.region}
+                                        </p>
+                                      ) : null}
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <ScrimStatusPill status={event.status} className="px-2 py-0.5 text-[9px]" />
+                                      {canCancelEvent(event) ? (
+                                        <button
+                                          type="button"
+                                          onClick={() => setPendingCancel(event)}
+                                          disabled={isActionPending}
+                                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 bg-rose-300/10 text-rose-200 transition hover:bg-rose-300 hover:text-slate-950 disabled:opacity-50"
+                                          aria-label={`Cancel ${eventTitle(event)}`}
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                  {event.kind !== "availability" && event.notes ? (
+                                    <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted">
+                                      {event.notes}
                                     </p>
                                   ) : null}
                                 </div>
-                                <div className="flex items-center gap-1">
-                                  <ScrimStatusPill status={event.status} className="px-2 py-0.5 text-[9px]" />
-                                  {canCancelEvent(event) ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => setPendingCancel(event)}
-                                      disabled={isActionPending}
-                                      className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-rose-300/40 bg-rose-300/10 text-rose-200 transition hover:bg-rose-300 hover:text-slate-950 disabled:opacity-50"
-                                      aria-label={`Cancel ${eventTitle(event)}`}
-                                    >
-                                      <X className="h-3.5 w-3.5" />
-                                    </button>
-                                  ) : null}
-                                </div>
-                              </div>
-                              {event.kind !== "availability" && event.notes ? (
-                                <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-muted">
-                                  {event.notes}
-                                </p>
-                              ) : null}
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-[#0a1724] to-transparent" />
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0a1724] to-transparent" />
+                    {scrollState.canScrollUp ? (
+                      <div className="absolute inset-x-0 top-1 flex justify-center opacity-0 transition group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => scrollDay(dayKey, "up")}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
+                          aria-label={`Scroll ${formatLocalDay(day, timeZone)} earlier by two hours`}
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
                       </div>
-                    );
-                  })}
+                    ) : null}
+                    {scrollState.canScrollDown ? (
+                      <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 transition group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => scrollDay(dayKey, "down")}
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
+                          aria-label={`Scroll ${formatLocalDay(day, timeZone)} later by two hours`}
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-                <div className="pointer-events-none absolute inset-x-0 top-0 h-5 bg-gradient-to-b from-[#0a1724] to-transparent" />
-                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-[#0a1724] to-transparent" />
-                {scrollState.canScrollUp ? (
-                  <div className="absolute inset-x-0 top-1 flex justify-center opacity-0 transition group-hover:opacity-100">
-                  <button
-                    type="button"
-                    onClick={() => scrollDay(dayKey, "up")}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
-                    aria-label={`Scroll ${formatLocalDay(day, timeZone)} earlier by two hours`}
-                  >
-                    <ChevronUp className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                ) : null}
-                {scrollState.canScrollDown ? (
-                  <div className="absolute inset-x-0 bottom-1 flex justify-center opacity-0 transition group-hover:opacity-100">
-                  <button
-                    type="button"
-                    onClick={() => scrollDay(dayKey, "down")}
-                    className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-line bg-slate-950/85 text-muted transition hover:border-accent hover:text-accent-strong"
-                    aria-label={`Scroll ${formatLocalDay(day, timeZone)} later by two hours`}
-                  >
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-                ) : null}
-              </div>
-            </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 

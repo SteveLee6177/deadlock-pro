@@ -1,6 +1,6 @@
 import { getIronSession, type SessionOptions } from "iron-session";
 import { cookies } from "next/headers";
-import { env } from "@/lib/env";
+import { env, getBaseUrl } from "@/lib/env";
 
 export type DeadlockSession = {
   authReturnTo?: string;
@@ -21,7 +21,9 @@ export const sessionOptions: SessionOptions = {
     "development-only-session-password-change-this-in-production-12345",
   cookieName: "deadlock-pro-session",
   cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: getBaseUrl().startsWith("https://"),
   },
 };
 

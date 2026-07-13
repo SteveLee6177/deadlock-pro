@@ -122,7 +122,7 @@ export default async function HomePage() {
                   </Link>
                   <Link
                     href="/teams"
-                    className="inline-flex items-center gap-2 rounded-full border border-line px-6 py-3 text-sm font-medium text-white transition hover:bg-white/6"
+                    className="inline-flex items-center gap-2 rounded-full bg-success px-6 py-3 text-sm font-semibold text-slate-950 shadow-lg shadow-success/15 transition hover:bg-[#9ee4cc]"
                   >
                     <Search className="h-4 w-4" />
                     Browse teams
@@ -154,7 +154,7 @@ export default async function HomePage() {
                   </h2>
                 </div>
                 <p className="max-w-xl text-sm leading-6 text-muted">
-                  Preview only: a team owner can post LFS blocks, review pending requests,
+                  Preview only: a team captain can post LFS blocks, review pending requests,
                   and see confirmed scrims in one weekly view.
                 </p>
               </div>
@@ -174,7 +174,7 @@ export default async function HomePage() {
               icon: Swords,
               title: "Post Looking For Scrim blocks",
               detail:
-                "Owners and managers mark the exact hours they want practice. Other teams request the block without chasing DMs.",
+                "Team captains and managers mark the exact hours they want practice. Other teams request the block without chasing DMs.",
             },
             {
               icon: CalendarClock,
@@ -205,7 +205,11 @@ export default async function HomePage() {
                 Find a roster that practices seriously.
               </h2>
             </div>
-            <Link href="/teams" className="text-sm font-medium text-accent-strong">
+            <Link
+              href="/teams"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full bg-success px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-[#9ee4cc]"
+            >
+              <Search className="h-4 w-4" />
               Browse teams
             </Link>
           </div>

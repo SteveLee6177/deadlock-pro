@@ -14,6 +14,7 @@ async function readPayload(response: Response) {
   return (await response.json().catch(() => ({}))) as {
     message?: string;
     status?: string;
+    teamSlug?: string;
   };
 }
 
@@ -31,11 +32,17 @@ export function TeamInviteActions({ currentTeamName, token }: TeamInviteActionsP
       });
       const payload = await readPayload(response);
 
-      setFeedback(payload.message ?? (response.ok ? "Invite accepted." : "Unable to accept invite."));
+      setFeedback(
+        payload.message ?? (response.ok ? "Invite accepted." : "Unable to accept invite."),
+      );
 
       if (response.ok) {
         window.dispatchEvent(new Event("team-memberships-changed"));
-        router.refresh();
+        if (payload.teamSlug) {
+          router.push(`/teams?team=${encodeURIComponent(payload.teamSlug)}`);
+        } else {
+          router.refresh();
+        }
       }
     });
   }

@@ -58,7 +58,7 @@ export default async function TeamRecruitingPage({ searchParams }: RecruitingPag
           <GuestAccessCard
             eyebrow="Steam Required"
             title="Sign in before changing recruiting"
-            description="Recruiting settings are limited to verified team owners and managers."
+            description="Recruiting settings are limited to verified team captains and managers."
           />
         ) : !workspace ? (
           <GuestAccessCard
@@ -74,7 +74,7 @@ export default async function TeamRecruitingPage({ searchParams }: RecruitingPag
           <GuestAccessCard
             eyebrow="Manager Access"
             title="Only team leadership can change recruiting"
-            description="Ask the owner, manager, or captain to update the team's recruiting settings."
+            description="Ask the team captain or manager to update the team's recruiting settings."
             ctaLabel="Back to My Team"
             ctaHref={teamHref}
           />
