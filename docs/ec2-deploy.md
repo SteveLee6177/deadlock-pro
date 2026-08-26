@@ -71,7 +71,7 @@ docker compose -f docker-compose.prod.yml up -d
 ```
 
 The production compose file publishes the app on host port `3001` and keeps Postgres and Redis on the private Docker network.
-The app container applies the Prisma schema with `prisma db push --skip-generate` before starting Next.js, so a fresh Postgres volume gets its tables automatically.
+The app container applies the Prisma schema with `prisma db push --accept-data-loss` before starting Next.js, so a fresh Postgres volume gets its tables automatically and existing volumes do not block startup on Prisma warnings.
 Postgres is also bound to `127.0.0.1:5432` on the EC2 host if you need to inspect or repair the database through an SSH tunnel.
 
 If the app was started from an older image before this automatic schema step existed, either rebuild and redeploy the image or apply the schema once from your laptop:
